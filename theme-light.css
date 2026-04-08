@@ -1,0 +1,12 @@
+@import './theme.css';
+
+:root {
+	--primary:		#ddd;
+	--secondary:	#ddd;
+	--bg:			#eee;
+	--fg:			#111;
+	--bar:			#ccc;
+	--accent:		#aaa;
+	--fg-inactive:	var(--fg);
+	--hl:			#111;
+}

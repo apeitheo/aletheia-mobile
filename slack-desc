@@ -1,0 +1,20 @@
+# HOW TO EDIT THIS FILE:
+# The "handy ruler" below makes it easier to edit a package description.
+# Line up the first '|' above the ':' following the base package name, and
+# the '|' on the right side marks the last column you can put a character in.
+# You must make exactly 11 lines for the formatting to be correct.  It's also
+# customary to leave one space after the ':' except on otherwise blank lines.
+
+               |-----handy-ruler------------------------------------------------------|
+aletheia-mobile: aletheia-mobile (Media player with easy-to-use speed controls)
+aletheia-mobile:
+aletheia-mobile: A media player with a wide range of features designed to
+aletheia-mobile: make it easy to adjust pitch and tempo in real-time using custom-
+aletheia-mobile: -izable intervals, allowing precise control over the playback speed
+aletheia-mobile: and tonality of media files. It also supports loop creation with
+aletheia-mobile: customizable start and end points for seamless looping. It has
+aletheia-mobile: optional voice feedback, and can import downloads.
+aletheia-mobile:
+aletheia-mobile:
+aletheia-mobile:
+

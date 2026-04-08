@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>.
+
+RED="\033[1;31m"
+NOCOLOR="\033[0m"
+GREEN="\033[1;32m"
+
+if [ "$(whoami)" != "root" ]; then
+	echo -e "${RED}Error:$NOCOLOR Needs root permission"
+	exit 1
+fi
+
+NAME="aletheia-mobile"
+VERSION=3
+REVISION=1
+SRCDIR=${SRCDIR:-"$(pwd)"}
+TMPDIR="/tmp/${NAME}_${VERSION}-${REVISION}_all"
+
+if [ -e "$TMPDIR" ]; then
+	rm -rf "$TMPDIR"
+fi
+
+mkdir -p "$TMPDIR"/DEBIAN
+mkdir -p "$TMPDIR"/usr/bin
+mkdir -p "$TMPDIR"/usr/share/doc/"$NAME"/
+mkdir -p "$TMPDIR"/usr/share/"$NAME"/
+
+cat << EOF > "$TMPDIR/DEBIAN/control"
+Package: $NAME
+Version: ${VERSION}
+Architecture: all
+Maintainer: Brad Hermanson <apeitheo@gmail.com>
+Depends: bc, calc, espeak-ng, ffmpeg, libimage-exiftool-perl, mpv, nodejs, inotify-tools, jq, socat
+Section: sound
+Homepage: https://github.com/apeitheo/$NAME
+Description: A media player with speed controls and voice feedback.
+EOF
+
+install -m 755 "$SRCDIR/$NAME" "$TMPDIR/usr/bin/"
+install -m 644 "$SRCDIR/index.html" "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/webserver.js" "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/theme"* "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/language"* "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/aletheia-mobile.svg" "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/LICENSE" "$TMPDIR/usr/share/doc/$NAME/"
+
+sed -i "/^ALETHEIA_DATA_DIR/s#.*#ALETHEIA_DATA_DIR=\"/usr/share/$NAME/\"#g" "$TMPDIR/usr/bin/$NAME"
+
+cd "$TMPDIR" || exit 1
+chown -R root:root "$TMPDIR"
+dpkg-deb --build "$TMPDIR"
+if [ -e "/tmp/${NAME}_${VERSION}-${REVISION}_all.deb" ]; then
+	echo -e "\n${GREEN}Install:\n\n${NOCOLOR}sudo apt install /tmp/${NAME}_${VERSION}-${REVISION}_all.deb\n"
+else
+	echo -e "\n${RED}Error:$NOCOLOR Package creation failed\n"
+	exit 1
+fi
+
+exit 0

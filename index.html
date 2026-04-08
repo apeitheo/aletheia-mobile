@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+
+<!--
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<meta charset="UTF-8">
+		<meta name="mobile-web-app-capable" content="yes">
+		<link rel="icon" type="image/svg+xml" href="aletheia-mobile.svg"/>
+		<title>Aletheia</title>
+	</head>
+
+	<body>
+		<style>
+			body, .button, .cover_button {
+				background-color: #000;
+				border: 0;
+			}
+		</style>
+
+		<div id="noConnection" style="display: none; justify-content: center; align-items: center; height: 100vh; width: 100vw; background-color: black; color: white; margin: 0; position: fixed; top: 0; left: 0; font-family: sans-serif; font-weight: bold; letter-spacing: 1px; z-index: 9999;">NO CONNECTION</div>
+
+		<div class="button-container">
+			<div class="queue_output" style="margin-bottom: 0">
+				<div class="outer">
+					<div id="queue_output" class="textbox" style="text-align: left; font-family: sans-serif;">
+						<br/><br/><br/><br/><br/>
+					</div>
+				</div>
+			</div>
+
+			<div class="row">
+				<button id="int_pipe" class="button interval" onclick="executeCommand('reset')" style="width: 100%; overflow-x: auto; white-space: nowrap; ">
+					LOADING<br/>
+				</button>
+			</div>
+
+			<div style="display: flex; flex-direction: column; flex: 1; margin-left: 1svh; margin-right: 1svh; overflow: hidden">
+				<button onclick="toggle_media_hidden(); executeCommand('coverart')" class="media_control cover_button" style="display: flex; flex-direction: row; margin-bottom: 0.5svh; margin-top: 1.5svh; border-radius: 2svh; flex: 1; justify-content: center; text-align: center; overflow: hidden; width: 100%"><img id="dynamicImage" class="media_control" src="icons/cover.jpg" alt="cover art" style="margin: auto; object-fit: cover; height: 100%; max-height: 100%" /></button>
+			</div>
+
+			<div id="controls-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 15, 0.95); color: #e0e0e0; z-index: 9999; justify-content: center; align-items: center; font-family: sans-serif;">
+				<div style="display: grid; grid-template-columns: auto auto; gap: 12px 30px; padding: 40px; border: 1px solid #444; border-radius: 8px; max-height: 80vh; overflow-y: auto;">
+					<div style="font-weight: bold; border-bottom: 1px solid #666; padding-bottom: 5px;">Key</div>
+					<div style="font-weight: bold; border-bottom: 1px solid #666; padding-bottom: 5px;">Action</div>
+
+					<div style="color: #4db8ff; font-weight: bold;">k / ↑</div><div>speed up</div>
+					<div style="color: #4db8ff; font-weight: bold;">j / ↓</div><div>speed down</div>
+					<div style="color: #4db8ff; font-weight: bold;">9</div><div>raise software volume</div>
+					<div style="color: #4db8ff; font-weight: bold;">8</div><div>lower software volume</div>
+					<div style="color: #4db8ff; font-weight: bold;">n</div><div>next song</div>
+					<div style="color: #4db8ff; font-weight: bold;">b</div><div>previous song</div>
+					<div style="color: #4db8ff; font-weight: bold;">p / enter</div><div>play/pause / select</div>
+					<div style="color: #4db8ff; font-weight: bold;">x</div><div>lock</div>
+					<div style="color: #4db8ff; font-weight: bold;">;</div><div>playlist editor</div>
+					<div style="color: #4db8ff; font-weight: bold;">h</div><div>seek back</div>
+					<div style="color: #4db8ff; font-weight: bold;">l</div><div>seek forward</div>
+					<div style="color: #4db8ff; font-weight: bold;">\</div><div>restart song</div>
+					<div style="color: #4db8ff; font-weight: bold;">y</div><div>reset to 60 EDO</div>
+					<div style="color: #4db8ff; font-weight: bold;">o</div><div>more precise</div>
+					<div style="color: #4db8ff; font-weight: bold;">m</div><div>less precise</div>
+					<div style="color: #4db8ff; font-weight: bold;">a</div><div>sort</div>
+					<div style="color: #4db8ff; font-weight: bold;">r</div><div>shuffle</div>
+					<div style="color: #4db8ff; font-weight: bold;">f</div><div>stop playback</div>
+					<div style="color: #4db8ff; font-weight: bold;">4</div><div>reset speed</div>
+					<div style="color: #4db8ff; font-weight: bold;">5</div><div>set start point</div>
+					<div style="color: #4db8ff; font-weight: bold;">7</div><div>set end point</div>
+					<div style="color: #4db8ff; font-weight: bold;">6</div><div>toggle loop mode</div>
+					<div style="color: #4db8ff; font-weight: bold;">u</div><div>unlock</div>
+					<div style="color: #4db8ff; font-weight: bold;">d</div><div>toggle voice feedback</div>
+					<div style="color: #4db8ff; font-weight: bold;">e</div><div>toggle loop song</div>
+					<div style="color: #4db8ff; font-weight: bold;">w</div><div>jump to new downloads</div>
+					<div style="color: #4db8ff; font-weight: bold;">!</div><div>toggle fade</div>
+					<div style="color: #4db8ff; font-weight: bold;">&gt;</div><div>move song up</div>
+					<div style="color: #4db8ff; font-weight: bold;">&lt;</div><div>move song down</div>
+
+				</div>
+			</div>
+
+			<div class="bottom_part">
+				<div class="pane">
+					<div class="row">
+						<button class="button settings_buttons" onclick="toggle_confirm()" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6v18h18v-18h-18zm19-4v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.731 2 1.631 2h5.712z"/></svg><div class="button_text">ARCHIVE</div></button>
+						<button class="button settings_buttons" style="display: none" onclick="executeCommand('toggleunlock')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 10v-4c0-3.313-2.687-6-6-6s-6 2.687-6 6v3h2v-3c0-2.206 1.794-4 4-4s4 1.794 4 4v4h-4v14h18v-14h-12z"/></svg></button>
+						<!-- FADE -->
+						<button class="button settings_buttons" onclick="executeCommand('togglefade')" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g transform="scale(-1,1) translate(-24,0)"><path d="M12 12l5-2.917v9.917h-5v-7zm7-4.083v11.083h5v-14l-5 2.917zm-9 5.25l-10 5.833h10v-5.833z"/></g></svg></button>
+					</div>
+					<div class="row">
+						<button class="button settings_buttons" onclick="toggle_lefthand()" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M20.825 12c-.228.59-3.052 6.998-3.772 8.614-.756 1.695-2.229 3.386-4.951 3.386h-4.729c-2.865 0-4.373-1.7-4.373-4.673v-12.975c0-1.721 2.37-1.633 2.37-.08v5.689c0 .468.858.465.858 0v-9.142c0-1.769 2.65-1.722 2.65 0v8.63c0 .476.797.456.797-.01v-10.128c0-1.722 2.624-1.773 2.624 0l.001 10.245c0 .459.826.469.826 0v-8.604c0-1.629 2.873-1.679 2.873 0v9.75c0 .597.587.692.811.236.212-.433 1.089-2.368 1.1-2.389.883-1.849 3.832-.726 2.915 1.451z"/></svg><div class="button_text">LEFT HAND</div></button>
+						<button class="button settings_buttons" onclick="executeCommand('voice')" style="display: none" ><svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd"><path d="M18.923 24c-2.402 0-3.776-1.891-4.508-4.229-.266-.86-.518-1.786-1.732-3.021-2.214-2.255-3.164-4.829-3.164-7.352 0-4.208 3.316-7.398 6.958-7.398 4.317 0 7.585 3.782 5.438 9.689l-1.915-.689c1.691-4.835-.899-6.764-3.582-6.815-2.328-.045-4.428 2.01-4.715 4.41-.25 2.094.298 4.627 2.3 6.548 1.735 1.664 1.971 2.766 2.288 3.857.731 2.516 1.883 2.903 2.705 2.849 1.923-.127 2.76-2.145.944-4.439l1.822-1.025c.841 1.239 1.231 2.572 1.238 3.615.016 2.45-1.939 4-4.077 4zm-12.267-6.589l-1.387 1.589c-2.612-2.323-4.269-5.714-4.269-9.501 0-3.787 1.657-7.178 4.269-9.5l1.387 1.588c-2.177 1.936-3.56 4.762-3.56 7.912 0 3.15 1.383 5.975 3.56 7.912zm.44-7.912c0-1.891.829-3.586 2.135-4.748l-1.386-1.585c-1.742 1.548-2.845 3.808-2.845 6.333 0 2.525 1.103 4.785 2.845 6.333l1.386-1.585c-1.306-1.162-2.135-2.858-2.135-4.748zm11.536 5.662c-1.24.655-2.362-.289-2.86-1.444-.476-1.101-.187-2.362.767-3.374.657-.697 1.022-1.531.884-2.167-.051-.242-.196-.565-.584-.724-.389-.161-.792-.111-1.117.07-.522.29-.937.995-1.08 1.839l-1.479-.25c.222-1.304.906-2.388 1.831-2.9.731-.405 1.601-.482 2.415-.147.764.314 1.303.969 1.482 1.797.244 1.135-.251 2.44-1.262 3.512 2.06.514 2.312 2.99 1.003 3.788z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button confirm text" onclick="executeCommand('delete'); toggle_confirm()" style="background-color: red; display: none; height: 16vh; border-radius: 0; position: absolute; top: 0vh; left: 0; margin-bottom: 1vh;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6v18h18v-18h-18zm19-4v2h-20v-2h5.711c.9 0 1.631-1.099 1.631-2h5.315c0 .901.731 2 1.631 2h5.712z"/></svg><div class="button_text" style="display: block">ARCHIVE?</div></button>
+					</div>
+					<div class="row" style="display: none">
+						<button class="button eq_page" onclick="" style="display: none"><div class="button_text2">3</div></button>
+						<button class="button eq_page" onclick="toggle_10band()" style="display: none"><div class="button_text2">10</div></button>
+					</div>
+					<div class="row">
+						<button class="button eq_page" onclick="executeCommand('reset_eq');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.5 2c-5.629 0-10.212 4.436-10.475 10h-3.025l4.537 5.917 4.463-5.917h-2.975c.26-3.902 3.508-7 7.475-7 4.136 0 7.5 3.364 7.5 7.5s-3.364 7.5-7.5 7.5c-2.381 0-4.502-1.119-5.876-2.854l-1.847 2.449c1.919 2.088 4.664 3.405 7.723 3.405 5.798 0 10.5-4.702 10.5-10.5s-4.702-10.5-10.5-10.5z"/></svg></button>
+					</div>
+					<div class="row">
+						<!-- PLUS -->
+						<button class="button eq_page 3band" onclick="executeCommand('bass_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button eq_page 3band" onclick="executeCommand('mid_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button eq_page 3band" onclick="executeCommand('treb_up')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('bass_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('mid_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('treb_up')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('bass_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('mid_up');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('treb_up')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button 10band" onclick="executeCommand('treb_up')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button eq_page 3band" onclick="executeCommand('bass_down');" style="display: none"><svg fill="#eee" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></svg></svg></button>
+						<button class="button eq_page 3band" onclick="executeCommand('mid_down');" style="display: none"><svg fill="#eee" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button eq_page 3band" onclick="executeCommand('treb_down')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+						<button class="button 10band" onclick="executeCommand(83)" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></button>
+					</div>
+					<div class="row">
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('saverepeat')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.003 3h2.997v5h-2.997v-5zm8.997 1v20h-24v-24h20l4 4zm-19 5h14v-7h-14v7zm16 4h-18v9h18v-9z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('nextrepeat')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.33 24l-2.83-2.829 9.339-9.175-9.339-9.167 2.83-2.829 12.17 11.996z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('ends')"><svg viewBox="0 0 24 24"xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd"><path d="M12 0c6.623 0 12 5.377 12 12s-5.377 12-12 12-12-5.377-12-12 5.377-12 12-12zm2.085 14h-9v2h9v3l5-4-5-4v3zm-4-6v-3l-5 4 5 4v-3h9v-2h-9z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('time_down')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('time_up')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('startminus')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('startplus')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('endminus')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 10h24v4h-24z"/></svg></button>
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('endplus')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button menu_buttons media_control pitch_functions" style="" onclick="executeCommand('togglelock')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>lock</title><path d="M18 10v-4c0-3.313-2.687-6-6-6s-6 2.687-6 6v4h-3v14h18v-14h-3zm-10 0v-4c0-2.206 1.794-4 4-4s4 1.794 4 4v4h-8z"/></svg></button>
+						<button class="button menu_buttons media_control pitch_functions" onclick="executeCommand('restart')" style=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>restart song</title><path d="M13.5 2c-5.629 0-10.212 4.436-10.475 10h-3.025l4.537 5.917 4.463-5.917h-2.975c.26-3.902 3.508-7 7.475-7 4.136 0 7.5 3.364 7.5 7.5s-3.364 7.5-7.5 7.5c-2.381 0-4.502-1.119-5.876-2.854l-1.847 2.449c1.919 2.088 4.664 3.405 7.723 3.405 5.798 0 10.5-4.702 10.5-10.5s-4.702-10.5-10.5-10.5z"/></svg></button>
+						<button class="button buttons_page2 pitch_functions primary" onclick="executeCommand('45edo')" style=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>reset e d o</title><path d="M21 13v10h-6v-6h-6v6h-6v-10h-3l12-12 12 12h-3z"/></svg></button>
+						<button class="button menu_buttons media_control pitch_functions" onclick="executeCommand('stop')" style=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>stop</title><path d="M2 2h20v20h-20z"/></svg></button>
+						<button class="button menu_buttons media_control pitch_functions" onclick="executeCommand('hold')" style=""><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>stop at end of song</title><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5 17h-10v-10h10v10z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button menu_buttons media_control pitch_functions primary" onclick="executeCommand('queue_up')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>move up</title><path d="M12 3l12 18h-24z"/></svg></button>
+						<button class="button menu_buttons media_control pitch_functions primary" onclick="executeCommand('unhook')" style=""><svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24"><title>playlist editor</title><path d="m17.133 17.202l1.596.923c-1.508 2.055-3.606 3.548-5.729 3.875v-11h3v-2h-3v-1.103c0-2.39 2-2.619 2-4.897 0-1.654-1.346-3-3-3s-3 1.346-3 3c0 2.297 2 2.487 2 4.897v1.103h-3v2h3v11c-2.123-.327-4.221-1.799-5.729-3.854l1.596-.944-4.867-2.811v5.621l1.5-.908c2.178 3.077 5.203 4.896 8.5 4.896s6.282-1.798 8.458-4.875l1.542.887v-5.621l-4.867 2.811zm-6.133-14.202c0-.551.449-1 1-1s1 .449 1 1-.449 1-1 1-1-.449-1-1z"/></svg></button>
+						<button class="button settings_buttons" onclick="executeCommand('queue_subtract');" style="display: none;"><svg width="24" height="24" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd"><title>remove current song</title><path d="M19 14.586l3.586-3.586 1.414 1.414-3.586 3.586 3.586 3.586-1.414 1.414-3.586-3.586-3.586 3.586-1.414-1.414 3.586-3.586-3.586-3.586 1.414-1.414 3.586 3.586zm-7 6.414h-12v-2h12v2zm0-4.024h-12v-2h12v2zm0-3.976h-12v-2h12v2zm12-4h-24v-2h24v2zm0-4h-24v-2h24v2z"/></svg></button>
+						<button class="button settings_buttons" style="display: none;" onclick="executeCommand('language_change')"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M24 24h-2.784l-1.07-3h-4.875l-1.077 3h-2.697l4.941-13h2.604l4.958 13zm-4.573-5.069l-1.705-4.903-1.712 4.903h3.417zm-9.252-12.804c.126-.486.201-.852.271-1.212l-2.199-.428c-.036.185-.102.533-.22 1-.742-.109-1.532-.122-2.332-.041.019-.537.052-1.063.098-1.569h2.456v-2.083h-2.161c.106-.531.198-.849.288-1.149l-2.147-.645c-.158.526-.29 1.042-.422 1.794h-2.451v2.083h2.184c-.058.673-.093 1.371-.103 2.077-2.413.886-3.437 2.575-3.437 4.107 0 1.809 1.427 3.399 3.684 3.194 2.802-.255 4.673-2.371 5.77-4.974 1.134.654 1.608 1.753 1.181 2.771-.396.941-1.561 1.838-3.785 1.792v2.242c2.469.038 4.898-.899 5.85-3.166.93-2.214-.132-4.635-2.525-5.793zm-2.892 1.531c-.349.774-.809 1.544-1.395 2.15-.09-.646-.151-1.353-.184-2.108.533-.07 1.072-.083 1.579-.042zm-3.788.724c.062.947.169 1.818.317 2.596-1.996.365-2.076-1.603-.317-2.596zm11.236-1.745l-2.075-5.533 5.414-1.104-.976 1.868c2.999 2.418 4.116 5.645 4.532 8.132-1.736-2.913-3.826-4.478-5.885-5.321l-1.01 1.958zm-7.895 10.781l1.985 5.566-5.43 1.016 1.006-1.852c-2.96-2.465-4.021-5.654-4.397-8.148 1.689 2.94 3.749 4.483 5.794 5.36l1.042-1.942zm10.795-6.029"/></svg></button>
+						<button class="button menu_buttons media_control pitch_functions primary" onclick="executeCommand('queue_down')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>move down</title><path d="M12 21l-12-18h24z"/></svg></button>
+					</div>
+					<div class="row">
+						<button id="volume_down" class="button media_control secondary" onclick="executeCommand('volumedown')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>volume down</title><path d="M 16,2 8,7 v 10 l 8,5 z M 2,7 V 17 H 6 V 7 Z M 19.390625,6.609375 17.888672,8.1113281 C 18.899663,9.1603191 19.525391,10.513009 19.525391,12 c 0,1.487991 -0.623775,2.840634 -1.634766,3.890625 l 1.503906,1.503906 c 1.467991,-1.423982 2.38086,-3.309549 2.38086,-5.394531 0,-2.0839811 -0.915775,-3.9666376 -2.384766,-5.390625 z"/></svg></button>
+						<button id="primary_speed_up" class="button buttons_page2 pitch_functions primary primary_speed_up" style="flex-direction: column;" onclick="executeCommand('intup')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 14"><title>speed up</title><path d="M0 12l3.5 3.5 8.5-8.5 8.5 8.5L24 12 12 0z" transform="translate(0,-2)"/></svg></button>
+						<button id="volume_up" class="button media_control secondary" onclick="executeCommand('volumeup')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>volume up</title><path d="M6 7l8-5v20l-8-5v-10zm-6 10h4v-10h-4v10zm20.264-13.264l-1.497 1.497c1.847 1.783 2.983 4.157 2.983 6.767 0 2.61-1.135 4.984-2.983 6.766l1.498 1.498c2.305-2.153 3.735-5.055 3.735-8.264s-1.43-6.11-3.736-8.264zm-.489 8.264c0-2.084-.915-3.967-2.384-5.391l-1.503 1.503c1.011 1.049 1.637 2.401 1.637 3.888 0 1.488-.623 2.841-1.634 3.891l1.503 1.503c1.468-1.424 2.381-3.309 2.381-5.394z"/></svg><div class="button_text">VOLUME UP</div></button>
+					</div>
+					<div class="row">
+						<button class="button buttons_page2 pitch_functions" style="flex-direction: column" onclick="executeCommand('halfedo')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>less precise</title><path d="M0 10h24v4h-24z"/></svg></button>
+						<button id="primary_speed_down" class="button buttons_page2 pitch_functions primary primary_speed_down" style="flex-direction: column;" onclick="executeCommand('intdown')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 14"><title>speed down</title><path d="M0 0l3.5-3.5 8.5 8.5 8.5-8.5L24 0l-12 12z" transform="translate(0,2)"/></svg></button>
+						<button class="button buttons_page2 pitch_functions" onclick="executeCommand('doubleedo')" style="flex-direction: column; "><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>more precise</title><path d="M24 10h-10v-10h-4v10h-10v4h10v10h4v-10h10z"/></svg><div class="button_text">DOUBLE</div></button>
+					</div>
+					<form id="search" method="post" action="/execute-search" >
+						<div class="row menu_buttons" style="display: none; max-height: 9vh;">
+							<input type="text" id="searchInput" name="commandString" class="button menu_buttons" style="padding-left: 2vh; min-height: unset; display: none;"/>
+							<button class="button menu_buttons" type="submit" style="display: none; max-width: 20vw"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M23.809 21.646l-6.205-6.205c1.167-1.605 1.857-3.579 1.857-5.711 0-5.365-4.365-9.73-9.731-9.73-5.365 0-9.73 4.365-9.73 9.73 0 5.366 4.365 9.73 9.73 9.73 2.034 0 3.923-.627 5.487-1.698l6.238 6.238 2.354-2.354zm-20.955-11.916c0-3.792 3.085-6.877 6.877-6.877s6.877 3.085 6.877 6.877-3.085 6.877-6.877 6.877c-3.793 0-6.877-3.085-6.877-6.877z"/></svg></button>
+						</div>
+					</form>
+					<div class="row">
+						<button class="button settings_buttons" onclick="document.getElementById('theme-style').setAttribute('href', 'theme-dark.css');executeCommand('toggledark'); localStorage.setItem('theme', 'dark');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 12c0 6.627 5.373 12 12 12s12-5.373 12-12-5.373-12-12-12-12 5.373-12 12zm2 0c0-5.514 4.486-10 10-10v20c-5.514 0-10-4.486-10-10z"/></svg></button>
+						<button class="button settings_buttons" onclick="document.getElementById('theme-style').setAttribute('href', 'theme-light.css');executeCommand('togglelight'); localStorage.setItem('theme', 'light');" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4.069 13h-4.069v-2h4.069c-.041.328-.069.661-.069 1s.028.672.069 1zm3.034-7.312l-2.881-2.881-1.414 1.414 2.881 2.881c.411-.529.885-1.003 1.414-1.414zm11.209 1.414l2.881-2.881-1.414-1.414-2.881 2.881c.528.411 1.002.886 1.414 1.414zm-6.312-3.102c.339 0 .672.028 1 .069v-4.069h-2v4.069c.328-.041.661-.069 1-.069zm0 16c-.339 0-.672-.028-1-.069v4.069h2v-4.069c-.328.041-.661.069-1 .069zm7.931-9c.041.328.069.661.069 1s-.028.672-.069 1h4.069v-2h-4.069zm-3.033 7.312l2.88 2.88 1.415-1.414-2.88-2.88c-.412.528-.886 1.002-1.415 1.414zm-11.21-1.415l-2.88 2.88 1.414 1.414 2.88-2.88c-.528-.411-1.003-.885-1.414-1.414zm6.312-10.897c-3.314 0-6 2.686-6 6s2.686 6 6 6 6-2.686 6-6-2.686-6-6-6z"/></svg></button>
+					</div>
+					<div class="row">
+						<button class="button menu_buttons" onclick="executeCommand('rename')" style="display: none;"><svg clip-rule="evenodd" fill-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m11.25 6c.398 0 .75.352.75.75 0 .414-.336.75-.75.75-1.505 0-7.75 0-7.75 0v12h17v-8.75c0-.414.336-.75.75-.75s.75.336.75.75v9.25c0 .621-.522 1-1 1h-18c-.48 0-1-.379-1-1v-13c0-.481.38-1 1-1zm-2.011 6.526c-1.045 3.003-1.238 3.45-1.238 3.84 0 .441.385.626.627.626.272 0 1.108-.301 3.829-1.249zm.888-.889 3.22 3.22 8.408-8.4c.163-.163.245-.377.245-.592 0-.213-.082-.427-.245-.591-.58-.578-1.458-1.457-2.039-2.036-.163-.163-.377-.245-.591-.245-.213 0-.428.082-.592.245z" fill-rule="nonzero"/></svg><div class="button_text">ARCHIVE</div></button>
+						<button class="button menu_buttons" onclick="executeCommand('add_downloaded')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15 9h4l-7 7-7-7h4v-9h6v9zm3.213-7.246l-1.213 1.599c2.984 1.732 5 4.955 5 8.647 0 5.514-4.486 10-10 10s-10-4.486-10-10c0-3.692 2.016-6.915 5-8.647l-1.213-1.599c-3.465 2.103-5.787 5.897-5.787 10.246 0 6.627 5.373 12 12 12s12-5.373 12-12c0-4.349-2.322-8.143-5.787-10.246zm-9.213 15.246c-.553 0-1 .447-1 1s.447 1 1 1 1-.447 1-1-.447-1-1-1zm3 0c-.553 0-1 .447-1 1s.447 1 1 1 1-.447 1-1-.447-1-1-1zm3 0c-.553 0-1 .447-1 1s.447 1 1 1 1-.447 1-1-.447-1-1-1z"/></svg><div class="button_text">ADD</div></button>
+						<button class="button menu_buttons" onclick="executeCommand('jump_downloaded')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 10h5l-7 8-7-8h5v-10h4v10zm4.213-8.246l-1.213 1.599c2.984 1.732 5 4.955 5 8.647 0 5.514-4.486 10-10 10s-10-4.486-10-10c0-3.692 2.016-6.915 5-8.647l-1.213-1.599c-3.465 2.103-5.787 5.897-5.787 10.246 0 6.627 5.373 12 12 12s12-5.373 12-12c0-4.349-2.322-8.143-5.787-10.246z"/></svg><div class="button_text">JUMP</div></button>
+					</div>
+					<div class="row">
+						<button class="button menu_buttons" onclick="executeCommand('load_sounds'); music_page()" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 24 24"><path d="M13.001 24h-2v-5h-7.001l4-6h-3l4-6h-2l5.001-7 4.999 7h-2l4 6h-3l4 6h-6.999v5z"/></svg><div class="button_text">SOUNDS</div></button>
+						<button class="button menu_buttons" onclick="executeCommand('load_music'); music_page()" style="display: none"><svg xmlns="http://www.w3.org/2000/svg"  viewBox="0 0 24 24"><path d="M23 0l-15.996 3.585v13.04c-2.979-.589-6.004 1.671-6.004 4.154 0 2.137 1.671 3.221 3.485 3.221 2.155 0 4.512-1.528 4.515-4.638v-10.9l12-2.459v8.624c-2.975-.587-6 1.664-6 4.141 0 2.143 1.715 3.232 3.521 3.232 2.14 0 4.476-1.526 4.479-4.636v-17.364z"/></svg><div class="button_text">MUSIC</div></button>
+					</div>
+					<div class="row">
+						<button class="button menu_buttons" onclick="executeCommand('sort')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 10v4h4l-6 8-6-8h4v-4h-4l6-8 6 8h-4zm10.19-1.016h3.237l.581 1.807h1.992l-3.11-8.791h-2.078l-3.138 8.792h1.921l.595-1.808zm1.641-4.974l1.11 3.459h-2.251l1.141-3.459zm-1.393 16.439h4.562v1.551h-6.787v-1.551l4.493-5.684h-4.38v-1.557h6.662v1.473l-4.55 5.768z"/></svg><div class="button_text">SORT</div></button>
+						<!-- LOOP -->
+						<button class="button menu_buttons" onclick="executeCommand('loopsong')" style="display: none;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 9h2v11h-17v3l-6-4 6-4v3h15v-9zm-18-3h15v3l6-4-6-4v3h-17v11h2v-9z"/></svg></button>
+						<button class="button menu_buttons" onclick="executeCommand('shuffle')" style="display: none"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 7h-2v-2h2c3.49 0 5.48 1.221 6.822 2.854-.41.654-.754 1.312-1.055 1.939-1.087-1.643-2.633-2.793-5.767-2.793zm16 10c-3.084 0-4.604-1.147-5.679-2.786-.302.627-.647 1.284-1.06 1.937 1.327 1.629 3.291 2.849 6.739 2.849v3l6-4-6-4v3zm0-10v3l6-4-6-4v3c-5.834 0-7.436 3.482-8.85 6.556-1.343 2.921-2.504 5.444-7.15 5.444h-2v2h2c5.928 0 7.543-3.511 8.968-6.609 1.331-2.893 2.479-5.391 7.032-5.391z"/></svg><div class="button_text">SHUFFLE</div></button>
+					</div>
+					<div class="row">
+						<!-- START -->
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('startpos')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 2v20h-2v-20h2zm18 0l-16 10 16 10v-20z"/></svg></button>
+						<!-- TOGGLE -->
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('repeat')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 12h-4v-12h4v12zm4.213-10.246l-1.213 1.599c2.984 1.732 5 4.955 5 8.647 0 5.514-4.486 10-10 10s-10-4.486-10-10c0-3.692 2.016-6.915 5-8.647l-1.213-1.599c-3.465 2.103-5.787 5.897-5.787 10.246 0 6.627 5.373 12 12 12s12-5.373 12-12c0-4.349-2.322-8.143-5.787-10.246z"/></svg></button>
+						<!-- END -->
+						<button class="button loop_page text" style="display: none" onclick="executeCommand('endpos')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 22v-20h2v20h-2zm-18 0l16-10-16-10v20z"/></svg></button>
+					</div>
+				</div>
+
+				<div class="row">
+					<div class="player-progress" aria-label="Playback progress">
+						<div class="progress-track" id="track">
+							<div class="progress-fill" id="fill"></div>
+							<div class="progress-thumb" id="thumb" aria-hidden="true"></div>
+						</div>
+					</div>
+				</div>
+				<div class="row seek_bar">
+					<button class="button menu_buttons remove_repeat media_control secondary seek_buttons" onclick="executeCommand('back')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>previous song</title><path d="M4 2v20h-2v-20h2zm18 0l-16 10 16 10v-20z"/></svg></button>
+					<button id="seek_left" class="button menu_buttons remove_repeat remove_repeat_only media_control secondary seek_buttons" onclick="executeCommand('backward')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>seek back</title><path d="M12 12l12-7v14l-12-7zm-12 0l12-7v14l-12-7z"/></svg></button>
+					<button id="pause" class="button menu_buttons media_control pause_button seek_buttons" onclick="executeCommand('pause')"><div id="pause_button"><div id="inner_play_button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>play</title><path d="M2 24v-24l20 12-20 12z"/></svg></div><div id="inner_pause_button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>pause</title><path d="M10 24h-6v-24h6v24zm10-24h-6v24h6v-24z"/></svg></div></div></button>
+					<button id="seek_right"  class="button menu_buttons remove_repeat remove_repeat_only media_control secondary seek_buttons" onclick="executeCommand('forward')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>seek forward</title><path d="M0 19v-14l12 7-12 7zm12 0v-14l12 7-12 7z"/></svg></button>
+					<button class="button menu_buttons remove_repeat media_control secondary seek_buttons" onclick="executeCommand('next')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>next song</title><path d="M20 22v-20h2v20h-2zm-18 0l16-10-16-10v20z"/></svg></button>
+				</div>
+
+				<div class="bottom_bar">
+					<button class="button bar but1 inactive-button" id="hide-button1" onclick="loop_page()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>loop menu</title><path d="M13.5 2c-5.629 0-10.212 4.436-10.475 10h-3.025l4.537 5.917 4.463-5.917h-2.975c.26-3.902 3.508-7 7.475-7 4.136 0 7.5 3.364 7.5 7.5s-3.364 7.5-7.5 7.5c-2.381 0-4.502-1.119-5.876-2.854l-1.847 2.449c1.919 2.088 4.664 3.405 7.723 3.405 5.798 0 10.5-4.702 10.5-10.5s-4.702-10.5-10.5-10.5z"/></svg></button>
+					<button class="button bar but5 inactive-button" id="hide-button5" onclick="eq_page()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>equalizer menu</title><path d="M6 23h-6v-2h6v2zm9-2h-6v2h6v-2zm9 0h-6v2h6v-2zm-18-4h-6v2h6v-2zm9 0h-6v2h6v-2zm9 0h-6v2h6v-2zm0-4h-6v2h6v-2zm-18 0h-6v2h6v-2zm9 0h-6v2h6v-2zm-9-4h-6v2h6v-2zm9 0h-6v2h6v-2zm0-4h-6v2h6v-2zm0-4h-6v2h6v-2z"/></svg></button>
+					<button class="button bar but2 inactive-button" id="hide-button3" onclick="menu_page()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>main menu</title><path d="M24 6h-24v-4h24v4zm0 4h-24v4h24v-4zm0 8h-24v4h24v-4z"/></svg></button>
+					<button class="button bar but4 inactive-button" id="hide-button2" onclick="settings_page()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>settings menu</title><path d="M24 13.616v-3.232l-2.869-1.02c-.198-.687-.472-1.342-.811-1.955l1.308-2.751-2.285-2.285-2.751 1.307c-.613-.339-1.269-.613-1.955-.811l-1.021-2.869h-3.232l-1.021 2.869c-.686.198-1.342.471-1.955.811l-2.751-1.308-2.285 2.285 1.308 2.752c-.339.613-.614 1.268-.811 1.955l-2.869 1.02v3.232l2.869 1.02c.197.687.472 1.342.811 1.955l-1.308 2.751 2.285 2.286 2.751-1.308c.613.339 1.269.613 1.955.811l1.021 2.869h3.232l1.021-2.869c.687-.198 1.342-.472 1.955-.811l2.751 1.308 2.285-2.286-1.308-2.751c.339-.613.613-1.268.811-1.955l2.869-1.02zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/></svg></button>
+					<button class="button bar but3 active-button" id="hide-button" onclick="music_page()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>main screen</title><path d="M23 0l-15.996 3.585v13.04c-2.979-.589-6.004 1.671-6.004 4.154 0 2.137 1.671 3.221 3.485 3.221 2.155 0 4.512-1.528 4.515-4.638v-10.9l12-2.459v8.624c-2.975-.587-6 1.664-6 4.141 0 2.143 1.715 3.232 3.521 3.232 2.14 0 4.476-1.526 4.479-4.636v-17.364z"/></svg></button>
+				</div>
+			</div>
+		</div>
+
+		<link rel="stylesheet" href="theme-dark.css" id="theme-style" media="(prefers-color-scheme: dark)"/>
+		<link rel="stylesheet" href="theme-light.css" id="theme-style" media="(prefers-color-scheme: light)"/>
+
+		<script>
+			const savedTheme = localStorage.getItem('theme');
+
+			if (savedTheme === 'light') {
+				document.getElementById('theme-style').setAttribute('href', 'theme-light.css');
+			} else {
+				document.getElementById('theme-style').setAttribute('href', 'theme-dark.css');
+			}
+
+			const savedHand = localStorage.getItem('hand');
+
+			if (savedHand === 'row-reverse') {
+				var elements = document.getElementsByClassName('bottom_bar');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.flexDirection = 'row-reverse';
+				}
+			} else {
+				var elements = document.getElementsByClassName('bottom_bar');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.flexDirection = 'row';
+				}
+			}
+			function toggleHelp() {
+				const overlay = document.getElementById('controls-overlay');
+				if (overlay.style.display === 'none') {
+					overlay.style.display = 'flex';
+				} else {
+					overlay.style.display = 'none';
+				}
+			}
+
+			setProgress(0);
+
+			const keyMap = {
+				"k": 'intup',            // 12
+				"arrowup": 'intup',      // 12
+				"j": 'intdown',          // 11
+				"arrowdown": 'intdown',  // 11
+				"9": 'volumeup',         // 6
+				"8": 'volumedown',       // 7
+				"n": 'next',             // 1
+				"b": 'back',             // 2
+				"p": 'pause',            // 3
+				"enter": 'pause',        // 3
+				"x": 'togglelock',       // 27
+				";": 'unhook',           // 87
+				"h": 'backward',         // 9
+				"l": 'forward',          // 8
+				"\\": 'restart',         // 25
+				"y": '45edo',            // 13
+				"o": 'doubleedo',            // 14
+				"arrowleft": 'halfedo',  // 72
+				"m": 'halfedo',          // 72
+				"arrowright": 'doubleedo',   // 14
+				"a": 'sort',             // 19
+				"r": 'shuffle',          // 20
+				"f": 'stop',             // 71
+				"4": 'reset',            // 57
+				"5": 'startpos',         // 44
+				"7": 'endpos',           // 45
+				"6": 'repeat',           // 36
+				"u": 'toggleunlock',     // 63
+				"d": 'voice',            // 4
+				"!": 'togglefade',       // 94
+				"e": 'loopsong',         // 23
+				"w": 'jump_downloaded',  // 66
+				",": 'speak_title',      // 98
+				">": 'queue_up',         // 89
+				"<": 'queue_down',       // 88
+				"g": 'voice_engine_alt'  // 100
+			};
+
+			document.addEventListener("keydown", (e) => {
+				e.stopPropagation();
+				const key = e.key.toLowerCase();
+				//const key = e.key;
+				const active = document.activeElement;
+				if (
+					active &&
+					(active.id === "searchInput" ||
+						active.tagName === "INPUT" ||
+						active.tagName === "TEXTAREA" ||
+						active.isContentEditable)
+				) {
+					return;
+				}
+
+				if (key === " ") {
+					e.preventDefault();
+					toggle_media_hidden();
+					executeCommand('coverart');
+					return;
+				/*} else if (key === "1") {
+					loop_page();
+				} else if (key === "2") {
+					eq_page();
+				} else if (key === "3") {
+					menu_page();
+				} else if (key === "4") {
+					settings_page();*/
+				} else if (key === "?" || key === "escape") {
+					toggleHelp();
+				} else if (key === "i") {
+					music_page();
+				} else if (key === "s") {
+					menu_page();
+					const searchBar = document.getElementById('searchInput');
+					event.preventDefault();
+					searchBar.focus();
+				} else if (key === "q") {
+					window.close();
+				}
+
+				if (keyMap.hasOwnProperty(key)) {
+					e.preventDefault();
+					executeCommand(keyMap[key]);
+				}
+			});
+
+			const form = document.getElementById("search");
+			const input = document.getElementById("searchInput");
+
+			form.addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const fd = new FormData(form);
+				const body = new URLSearchParams(fd);
+
+				const resp = await fetch("/execute-search", {
+					method: "POST",
+					headers: { "Content-Type": "application/x-www-form-urlencoded" },
+					body
+				});
+
+				input.value = "";
+				if (!resp.ok) {
+					const text = await resp.text();
+					console.error("Search failed:", text);
+					return;
+				}
+			});
+
+			function fetchData() {
+				var xhr = new XMLHttpRequest();
+				xhr.onreadystatechange = function() {
+					if (xhr.readyState === XMLHttpRequest.DONE) {
+						if (xhr.status === 200) {
+							var response = JSON.parse(xhr.responseText);
+							document.getElementById("pause").innerHTML = response.pause;
+						} else {
+							console.log('Error: ' + xhr.status);
+						}
+					}
+				};
+				xhr.open('GET', '/execute-command1-update', true);
+				xhr.send(null);
+			}
+
+			function updateImage() {
+				const img = document.getElementById('dynamicImage');
+				const timestamp = new Date().getTime();
+				img.src = `icons/cover.jpg?${timestamp}`;
+			}
+
+			async function fetchTitlePipeData() {
+				try {
+					const response = await fetch('/get-title-pipe-data');
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+					const pipeData = await response.text();
+					document.getElementById('execute-rename').textContent = pipeData;
+				} catch (error) {
+					console.error('Error fetching int pipe data:', error);
+					document.getElementById('execute-rename').textContent = 'N/A';
+				}
+			}
+
+			let isCurrentlyConnected = true;
+
+			async function fetchIntPipeData() {
+				try {
+					const response = await fetch('/get-int-pipe-data');
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+					const pipeData = await response.text();
+					document.getElementById('int_pipe').textContent = pipeData;
+
+					if (!isCurrentlyConnected) {
+						document.getElementById('noConnection').style.display = 'none';
+						isCurrentlyConnected = true;
+						console.log("Connection restored.");
+					}
+
+				} catch (error) {
+					console.error('Error fetching int pipe data:', error);
+
+					if (isCurrentlyConnected) {
+						document.getElementById('int_pipe').textContent = 'NO CONNECTION';
+						document.getElementById('noConnection').style.display = 'flex';
+						setProgress(0);
+						isCurrentlyConnected = false;
+						console.log("Connection lost.");
+					}
+				}
+			}
+
+			async function fetchQueuePipeData() {
+				try {
+					const response = await fetch('/get-queue-pipe-data');
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+					const pipeData = await response.text();
+					const formattedData = pipeData.replace(/\\n/g, "\n");
+					document.getElementById('queue_output').innerHTML = formattedData;
+				} catch (error) {
+					console.error('Error fetching int pipe data:', error);
+					document.getElementById('queue_output').innerHTML = '<div class="interval_other">&nbsp;</div><br/><div class="interval_other">&nbsp;</div><br/><div class="interval_other">&nbsp;</div><br/><div class="interval_other">&nbsp;</div><br/><div class="interval_other">&nbsp;</div>';
+				}
+			}
+
+			function setProgress(percent) {
+				const thumb = document.getElementById('thumb');
+				const clamped = Math.max(0, Math.min(100, percent));
+				thumb.style.left = `${4 + (clamped - 1) * (94 / 100)}%`;
+			}
+
+			async function fetchPosPipeData() {
+				try {
+					const response = await fetch('/get-pos-pipe-data');
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+					const pipeData = await response.text();
+					posText = pipeData;
+					setProgress(posText);
+				} catch (error) {
+					console.error('Error fetching int pipe data:', error);
+				}
+			}
+
+			async function fetchPausePipeData() {
+				try {
+					const response = await fetch('/get-pause-pipe-data');
+					if (!response.ok) {
+						throw new Error(`HTTP error! status: ${response.status}`);
+					}
+					const pipeData = await response.text();
+					const pauseContainer = document.getElementById("pause_button");
+
+					if (pipeData === "0") {
+						pauseContainer.className = "show-pause";
+					} else {
+						pauseContainer.className = "show-play";
+					}
+				} catch (error) {
+					console.error('Error fetching int pipe data:', error);
+				}
+			}
+
+			window.onload = function() {
+				fetchIntPipeData();
+				fetchQueuePipeData();
+				fetchPosPipeData();
+				fetchPausePipeData();
+				updateImage();
+
+				setInterval(fetchIntPipeData, 100);
+				setInterval(fetchQueuePipeData, 100);
+				setInterval(fetchPosPipeData, 300);
+				setInterval(fetchPausePipeData, 100);
+				setInterval(updateImage, 1000);
+			};
+
+			function toggle_artist() {
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but1') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+			}
+
+			function toggle_media_hidden() {
+				var elements = document.getElementsByClassName('pitch_functions');
+				var element = elements[0];
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'flex';
+					} else {
+						element.style.display = 'none';
+					}
+				}
+				var elements = document.getElementsByClassName('hidden_pitch_functions');
+				var element = elements[0];
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'flex';
+					} else {
+						element.style.display = 'none';
+					}
+				}
+			}
+
+			function toggle_hidden_repeat() {
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'flex';
+					} else {
+						element.style.display = 'none';
+					}
+				}
+				var elements = document.getElementsByClassName('buttons_page2');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'unset';
+				}
+			}
+
+			function toggle_invert() {
+				const buttons = document.querySelectorAll('.button');
+
+				buttons.forEach(button => {
+					button.classList.toggle('inverted');
+				});
+
+				document.body.classList.toggle('inverted');
+			}
+
+			function toggle_hidden() {
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'flex';
+					} else {
+						element.style.display = 'none';
+					}
+				}
+				executeCommand('gapplus');
+				var elements = document.getElementsByClassName('buttons_page2');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+			}
+
+			function settings_page() {
+				executeCommand('showint');
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				executeCommand('gapplus');
+				var elements = document.getElementsByClassName('eq_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('buttons_page2');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('seek_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}  
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but4') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function loop_mode() {
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but5') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function toggle_labels() {
+				var elements = document.getElementsByClassName('button_text');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'inline-block';
+					} else {
+						element.style.display = 'none';
+					}
+				}
+			}
+
+			function toggle_lefthand() {
+				var elements = document.getElementsByClassName('bottom_bar');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.flexDirection === 'row' || element.style.flexDirection === '') {
+						element.style.flexDirection = 'row-reverse';
+					} else {
+						element.style.flexDirection = 'row';
+					}
+				}
+				localStorage.setItem('hand', element.style.flexDirection);
+			}
+
+			function toggle_confirm() {
+				var elements = document.getElementsByClassName('confirm');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					if (element.style.display === 'none') {
+						element.style.display = 'flex';
+						executeCommand('scale');
+					} else {
+						element.style.display = 'none';
+					}
+				}
+			}
+
+			function eq_page() {
+				executeCommand('eq_page');
+				var elements = document.getElementsByClassName('confirm');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('eq_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('playlist_functions_button');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('seek_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}  
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but5') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function toggle_10band() {
+				var elements = document.getElementsByClassName('10band');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+					var svgs = element.querySelectorAll('svg');
+					for (var j = 0; j < svgs.length; j++) {
+						svgs[j].style.height = '5vw'; 
+					}
+				}
+				var elements = document.getElementsByClassName('3band');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+					var svgs = element.querySelectorAll('svg');
+					for (var j = 0; j < svgs.length; j++) {
+						svgs[j].style.height = '5vw'; 
+					}
+				}
+			}
+
+			function loop_page() {
+				executeCommand('loop_page');
+				executeCommand('showint');
+				var elements = document.getElementsByClassName('confirm');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('eq_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions_button');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('seek_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}  
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but1') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function menu_page() {
+				executeCommand('showint');
+				executeCommand('gapminus');
+				var elements = document.getElementsByClassName('confirm');
+				elements[0].style.display = 'none';
+				elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					elements[i].style.display = 'none';
+				}
+				elements = document.getElementsByClassName('eq_page');
+				for (var i = 0; i < elements.length; i++) {
+					elements[i].style.display = 'none';
+				}
+				elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					elements[i].style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				var elements = document.getElementsByClassName('seek_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}  
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but2') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function music_page() {
+				executeCommand('showint');
+				executeCommand('main_screen');
+				var elements = document.getElementsByClassName('confirm');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}  
+				var elements = document.getElementsByClassName('buttons_page2');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				var elements = document.getElementsByClassName('settings_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('eq_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('hidden_pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}  
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('loop_page');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('menu_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('music_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('seek_buttons');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+				var buttonClasses = ['but1', 'but2', 'but3', 'but4', 'but5'];
+				for (var i = 0; i < buttonClasses.length; i++) {
+					var buttons = document.getElementsByClassName(buttonClasses[i]);
+					for (var j = 0; j < buttons.length; j++) {
+						if (buttonClasses[i] === 'but3') {
+							buttons[j].classList.add('active-button');
+							buttons[j].classList.remove('inactive-button');
+						} else {
+							buttons[j].classList.remove('active-button');
+							buttons[j].classList.add('inactive-button');
+						}
+					}
+				}
+			}
+
+			function hide_bar() {
+				var elements = document.getElementsByClassName('bar');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+			}
+
+			function show_bar() {
+				var elements = document.getElementsByClassName('bar');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'unset';
+				}
+			}
+
+			function show_media_buttons() {
+				var elements = document.getElementsByClassName('media_control');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+			}
+
+			function hide_seek_buttons() {
+				var elements = document.getElementsByClassName('remove_repeat');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+			}
+
+			function hide_playlist() {
+				if (window.matchMedia("(orientation: portrait)").matches) {
+					document.querySelector('.queue_output').style.display = 'none';
+				}
+			}
+
+			function show_playlist() {
+				var elements = document.getElementsByClassName('queue_output');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'unset';
+					element.style.width = '100%';
+					element.style.left = '0';
+					element.style.margin = '0';
+				}
+			}
+
+			function show_pitch_functions() {
+				var elements = document.getElementsByClassName('pitch_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'flex';
+				}
+			}
+
+			function toggle_hidden4() {
+				music_page()
+				var elements = document.getElementsByClassName('playlist_functions');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+				var elements = document.getElementsByClassName('playlist_functions_back');
+				for (var i = 0; i < elements.length; i++) {
+					var element = elements[i];
+					element.style.display = 'none';
+				}
+			}
+
+			function executeCommand(commandNumber) {
+				const xhr = new XMLHttpRequest();
+				xhr.open("GET", "/execute-command-" + commandNumber);
+				console.error(`${commandNumber}`);
+				xhr.send(1);
+				if (commandNumber == 'back_from_repeat') {
+					music_page()
+					show_bar()
+					show_playlist()
+				} else if (commandNumber == 'repeatonly') {
+					toggle_hidden_repeat()
+					show_media_buttons()
+					hide_bar()
+					hide_playlist()
+					show_pitch_functions()  
+					var elements = document.getElementsByClassName('remove_repeat_only');
+					for (var i = 0; i < elements.length; i++) {
+						var element = elements[i];
+						element.style.display = 'none';
+					}
+				} else if (commandNumber == 'back_alt') {
+					var elements = document.getElementsByClassName('sleepmode');
+					for (var i = 0; i < elements.length; i++) {
+						var element = elements[i];
+						element.style.display = 'unset';
+					}
+					var elements = document.getElementsByClassName('sleepmode_back');
+					for (var i = 0; i < elements.length; i++) {
+						var element = elements[i];
+						element.style.display = 'none';
+					}
+				}
+			}
+		</script>
+	</body>
+</html>

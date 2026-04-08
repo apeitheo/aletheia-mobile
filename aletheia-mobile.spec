@@ -1,0 +1,46 @@
+Summary: A media player with speed controls and voice feedback
+Name: aletheia-mobile
+Version: %%VERSION%%
+Release: %%REVISION%%%{?dist}
+License: GPL3
+URL: https://github.com/apeitheo/aletheia-mobile
+Requires: bc
+Requires: calc
+Requires: espeak-ng
+Requires: ffmpeg
+Requires: mpv
+Requires: perl-Image-ExifTool
+Requires: pulseaudio-utils
+Requires: inotify-tools
+Requires: nodejs
+Requires: socat
+Requires: jq
+BuildArch: noarch
+
+%description
+A media player with pitch and tempo controls using music intervals with the ability to create seamless loops, save custom adjustments, and more.
+
+%install
+
+install -D -m 755 "%%TMPDIR%%/rpmbuild/SOURCES/usr/bin/aletheia-mobile" "%{buildroot}/%{_bindir}/aletheia-mobile"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/index.html" "%{buildroot}/%{_datadir}/aletheia-mobile/index.html"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/webserver.js" "%{buildroot}/%{_datadir}/aletheia-mobile/webserver.js"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme.css"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-dark.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme-dark.css"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-light.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme-light.css"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/aletheia-mobile.svg" "%{buildroot}/%{_datadir}/aletheia-mobile/aletheia-mobile.svg"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/doc/aletheia-mobile/LICENSE" "%{buildroot}/%{_docdir}/aletheia-mobile/LICENSE"
+
+%files
+%attr(0755, root, root) %{_bindir}/aletheia-mobile
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/index.html
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/webserver.js
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/theme.css
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-dark.css
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-light.css
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/aletheia-mobile.svg
+%doc %attr(0644, root, root) %{_docdir}/aletheia-mobile/LICENSE
+
+%changelog
+* Mon Mar 16 2026 Brad Hermanson 1.0
+- Initial release.

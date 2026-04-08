@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>.
+
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+NOCOLOR="\033[0m"
+
+DESTDIR=${DESTDIR:-/usr/local}
+if [ "$1" == "--destdir" ]; then
+	if [ -d "$2" ]; then
+		DESTDIR=$2
+	else
+		echo -ne "\n${RED}Error: Not a directory$NOCOLOR\n"
+		exit 1
+	fi
+fi
+
+if [ "${1:0:10}" == "--destdir=" ]; then
+	dir=${1:10}
+	if [ -d "$dir" ]; then
+		DESTDIR=$dir
+	else
+		echo -ne "\n${RED}Error: Not a directory$NOCOLOR\n"
+		exit 1
+	fi
+fi
+
+if [ ! -w "$DESTDIR" ]; then
+	echo -e "${RED}Error:$NOCOLOR Need root permission to uninstall from $DESTDIR"
+	exit 1
+fi
+
+FILES+=("${DESTDIR}/bin/aletheia-mobile")
+FILES+=("${DESTDIR}/share/aletheia-mobile/index.html")
+FILES+=("${DESTDIR}/share/aletheia-mobile/webserver.js")
+FILES+=("${DESTDIR}/share/doc/aletheia-mobile/LICENSE")
+FILES+=("${DESTDIR}/share/aletheia-mobile/theme"*".css")
+FILES+=("${DESTDIR}/share/aletheia-mobile/language."*)
+FILES+=("${DESTDIR}/share/aletheia-mobile/aletheia-mobile.svg")
+
+FAIL=false
+for i in $(seq 0 $((${#FILES[@]}-1))); do
+	if ! rm -f "${FILES[i]}" >/dev/null 2>/dev/null; then
+		echo -e "${RED}Failed:${NOCOLOR} ${FILES[i]} not deleted."
+		FAIL=true
+	else
+		echo "rm -f \"${FILES[i]}\""
+	fi
+done
+
+rmdir "${DESTDIR}/share/aletheia-mobile/" "${DESTDIR}/share/doc/aletheia-mobile/"
+
+if $FAIL; then
+	echo -ne "\n${RED}Uninstall not successful$NOCOLOR\n"
+	exit 1
+else
+	echo -ne "\n${GREEN}Aletheia-mobile uninstalled${NOCOLOR}\n"
+	exit 0
+fi

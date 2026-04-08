@@ -1,0 +1,262 @@
+#!/bin/bash
+
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>.
+
+ALETHEIA="$HOME/.aletheia-mobile"
+
+shopt -s nullglob
+pipes=("$ALETHEIA"/web_client_pipe*)
+shopt -u nullglob
+
+if [ "${#pipes[@]}" -eq 1 ]; then
+	FIFO="${pipes[0]##*/}"
+elif [ "${#pipes[@]}" -gt 1 ]; then
+	echo "Error: Too many pipes"
+	exit 1
+else
+	echo "Error: No pipes found"
+	exit 1
+fi
+
+case $1 in
+	"stop")
+		echo -ne "F" >"$ALETHEIA"/"$FIFO"
+		;;
+	"next")
+		echo -ne "n" >"$ALETHEIA"/"$FIFO"
+		;;
+	"back")
+		echo -ne "b" >"$ALETHEIA"/"$FIFO"
+		;;
+	"main_screen")
+		echo -ne "0" >"$ALETHEIA"/"$FIFO"
+		;;
+	"pause")
+		echo -ne "p" >"$ALETHEIA"/"$FIFO"
+		;;
+	"voice")
+		echo -ne "d" >"$ALETHEIA"/"$FIFO"
+		;;
+	"morebass")
+		echo -ne "B" >"$ALETHEIA"/"$FIFO"
+		;;
+	"lessbass")
+		echo -ne "L" >"$ALETHEIA"/"$FIFO"
+		;;
+	"nextartist")
+		echo -ne "N" >"$ALETHEIA"/"$FIFO"
+		;;
+	"quit")
+		echo -ne "qy" >"$ALETHEIA"/"$FIFO"
+		;;
+	"volumeup")
+		echo -ne "9" >"$ALETHEIA"/"$FIFO"
+		;;
+	"volumedown")
+		echo -ne "8" >"$ALETHEIA"/"$FIFO"
+		;;
+	"forward")
+		echo -ne "l" >"$ALETHEIA"/"$FIFO"
+		;;
+	"queue_subtract")
+		echo -ne "-" >"$ALETHEIA"/"$FIFO"
+		;;
+	"backward")
+		echo -ne "h" >"$ALETHEIA"/"$FIFO"
+		;;
+	"fadedown")
+		echo -ne "3j" >"$ALETHEIA"/"$FIFO"
+		;;
+	"intdown")
+		echo -ne "j" >"$ALETHEIA"/"$FIFO"
+		;;
+	"intup")
+		echo -ne "k" >"$ALETHEIA"/"$FIFO"
+		;;
+	"halfedo")
+		echo -ne "m" >"$ALETHEIA"/"$FIFO"
+		;;
+	"doubleedo")
+		echo -ne "o" >"$ALETHEIA"/"$FIFO"
+		;;
+	"45edo")
+		echo -ne "y" >"$ALETHEIA"/"$FIFO"
+		;;
+	"90edo")
+		echo -ne "o" >"$ALETHEIA"/"$FIFO"
+		;;
+	"180edo")
+		echo -ne "yoo" >"$ALETHEIA"/"$FIFO"
+		;;
+	"360edo")
+		echo -ne "yooo" >"$ALETHEIA"/"$FIFO"
+		;;
+	"zeroint")
+		echo -ne "yY" >"$ALETHEIA"/"$FIFO"
+		;;
+	"music")
+		echo -ne "i^1" >"$ALETHEIA"/"$FIFO"
+		;;
+	"sound")
+		echo -ne "i^2" >"$ALETHEIA"/"$FIFO"
+		;;
+	"sort")
+		echo -ne "A" >"$ALETHEIA"/"$FIFO"
+		;;
+	"shuffle")
+		echo -ne "R" >"$ALETHEIA"/"$FIFO"
+		;;
+	"delete")
+		echo -ne "Dy" >"$ALETHEIA"/"$FIFO"
+		;;
+	"loopsong")
+		echo -ne "e" >"$ALETHEIA"/"$FIFO"
+		;;
+	"loop_page")
+		echo -ne "Q" >"$ALETHEIA"/"$FIFO"
+		;;
+	"time_down")
+		echo -ne "v" >"$ALETHEIA"/"$FIFO"
+		;;
+	"time_up")
+		echo -ne "V" >"$ALETHEIA"/"$FIFO"
+		;;
+	"togglefade")
+		echo -ne "_" >"$ALETHEIA"/"$FIFO"
+		;;
+	"loopartist")
+		echo -ne "V" >"$ALETHEIA"/"$FIFO"
+		;;
+	"restart")
+		echo -ne "\\" >"$ALETHEIA"/"$FIFO"
+		;;
+	"defaultint")
+		echo -ne "tY" >"$ALETHEIA"/"$FIFO"
+		;;
+	"togglelock")
+		echo -ne "x" >"$ALETHEIA"/"$FIFO"
+		;;
+	"toggleunlock")
+		echo -ne "X" >"$ALETHEIA"/"$FIFO"
+		;;
+	"search")
+		echo -ne "s$2\n\n" >"$ALETHEIA"/"$FIFO"
+		;;
+	"repeat")
+		echo -ne "!" >"$ALETHEIA"/"$FIFO"
+		;;
+	"startpos")
+		echo -ne "5" >"$ALETHEIA"/"$FIFO"
+		;;
+	"endpos")
+		echo -ne "7" >"$ALETHEIA"/"$FIFO"
+		;;
+	"deleterepeat")
+		echo -ne "%" >"$ALETHEIA"/"$FIFO"
+		;;
+	"queue_down")
+		echo -ne "i" >"$ALETHEIA"/"$FIFO"
+		;;
+	"queue_up")
+		echo -ne "I" >"$ALETHEIA"/"$FIFO"
+		;;
+	"nextrepeat")
+		echo -ne "?" >"$ALETHEIA"/"$FIFO"
+		;;
+	"startplus")
+		echo -ne "1" >"$ALETHEIA"/"$FIFO"
+		;;
+	"startminus")
+		echo -ne "2" >"$ALETHEIA"/"$FIFO"
+		;;
+	"endplus")
+		echo -ne "3" >"$ALETHEIA"/"$FIFO"
+		;;
+	"endminus")
+		echo -ne "6" >"$ALETHEIA"/"$FIFO"
+		;;
+	"load_sounds")
+		echo -ne "S" >"$ALETHEIA"/"$FIFO"
+		;;
+	"load_music")
+		echo -ne "P" >"$ALETHEIA"/"$FIFO"
+		;;
+	"mute")
+		echo -ne "M" >"$ALETHEIA"/"$FIFO"
+		;;
+	"rename")
+		echo -ne "r" >"$ALETHEIA"/"$FIFO"
+		;;
+	"gapminus")
+		echo -ne "<" >"$ALETHEIA"/"$FIFO"
+		;;
+	"gapplus")
+		echo -ne ">" >"$ALETHEIA"/"$FIFO"
+		;;
+	"coverart")
+		echo -ne "C" >"$ALETHEIA"/"$FIFO"
+		;;
+	"ends")
+		echo -ne "O" >"$ALETHEIA"/"$FIFO"
+		;;
+	"saverepeat")
+		echo -ne "#" >"$ALETHEIA"/"$FIFO"
+		;;
+	"sleep")
+		echo -ne "Y" >"$ALETHEIA"/"$FIFO"
+		;;
+	"scale")
+		echo -ne "u" >"$ALETHEIA"/"$FIFO"
+		;;
+	"unhook")
+		echo -ne "&" >"$ALETHEIA"/"$FIFO"
+		;;
+	"reset")
+		echo -ne "4" >"$ALETHEIA"/"$FIFO"
+		;;
+	"hold")
+		echo -ne "z" >"$ALETHEIA"/"$FIFO"
+		;;
+	"add_downloaded")
+		echo -ne "W" >"$ALETHEIA"/"$FIFO"
+		;;
+	"bass_up")
+		echo -ne "+b+" >"$ALETHEIA"/"$FIFO"
+		;;
+	"bass_down")
+		echo -ne "+b-" >"$ALETHEIA"/"$FIFO"
+		;;
+	"mid_up")
+		echo -ne "+m+" >"$ALETHEIA"/"$FIFO"
+		;;
+	"mid_down")
+		echo -ne "+m-" >"$ALETHEIA"/"$FIFO"
+		;;
+	"treb_up")
+		echo -ne "+t+" >"$ALETHEIA"/"$FIFO"
+		;;
+	"treb_down")
+		echo -ne "+t-" >"$ALETHEIA"/"$FIFO"
+		;;
+	"reset_eq")
+		echo -ne "%" >"$ALETHEIA"/"$FIFO"
+		;;
+	"eq_page")
+		echo -ne "E" >"$ALETHEIA"/"$FIFO"
+		;;
+esac

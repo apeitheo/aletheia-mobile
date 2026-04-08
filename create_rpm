@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>.
+
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+NOCOLOR="\033[0m"
+
+if [ "$(whoami)" != "root" ]; then
+	echo -e "${RED}Error:$NOCOLOR Needs root permission"
+	exit 1
+fi
+
+NAME="aletheia-mobile"
+VERSION=3
+REVISION=1
+SRCDIR=${SRCDIR:-"$(pwd)"}
+TMPDIR="/tmp/rpm-package-$NAME/"
+
+OS="$(grep -E "^NAME[[:space:]]*=" /etc/os-release)"
+OS="${OS#*=}"
+
+if [ -e "$TMPDIR" ]; then
+	rm -rf "$TMPDIR"
+fi
+
+mkdir -p "$TMPDIR"/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SOURCES/man,SPECS,SRPMS}
+
+mkdir -p "$TMPDIR/rpmbuild/SOURCES/usr/bin/"
+mkdir -p "$TMPDIR/rpmbuild/SOURCES/usr/share/doc/$NAME/"
+mkdir -p "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+
+cp "$SRCDIR/$NAME" "$TMPDIR/rpmbuild/SOURCES/usr/bin/"
+cp "$SRCDIR/index.html" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/webserver.js" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/LICENSE" "$TMPDIR/rpmbuild/SOURCES/usr/share/doc/$NAME/"
+cp "$SRCDIR/theme"* "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/language"* "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/aletheia-mobile.svg" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/$NAME.spec" "$TMPDIR/rpmbuild/SPECS/"
+
+sed -i "/^ALETHEIA_DATA_DIR/s#.*#ALETHEIA_DATA_DIR=\"/usr/share/$NAME/\"#g" "$TMPDIR/rpmbuild/SOURCES/usr/bin/$NAME"
+sed -i "s/%%DATE%%/$(date +"%a %b %e %Y")/g;s/%%VERSION%%/$VERSION/g;s/%%REVISION%%/$REVISION/g;s/%%TMPDIR%%/${TMPDIR//\//\\\/}/g" "$TMPDIR/rpmbuild/SPECS/$NAME.spec"
+
+if [[ "$OS" == *"openSUSE"* ]]; then
+	sed -i "s/perl-Image-ExifTool/exiftool/g" "$TMPDIR/rpmbuild/SPECS/$NAME.spec"
+fi
+
+if [[ "$OS" == *"openSUSE"* ]]; then
+	path="/usr/src/packages"
+else
+	path="$HOME/rpmbuild"
+fi
+
+rm -f "$path/RPMS/noarch/${NAME}-${VERSION}-"*".noarch.rpm" >/dev/null 2>&1
+
+cd "$TMPDIR" || exit 1
+
+if ! rpmbuild -bb rpmbuild/SPECS/"$NAME".spec; then
+	echo -e "\n${RED}Error: ${NOCOLOR}Package creation failed\n"
+	exit 1
+fi
+
+mv "$path/RPMS/noarch/${NAME}-${VERSION}-"*".noarch.rpm" "$SRCDIR"
+file="$(ls "$SRCDIR/${NAME}-${VERSION}-"*".noarch.rpm")"
+
+if [[ "$OS" == *"openSUSE"* ]]; then
+	echo -e "\n${GREEN}Install:\n\n${NOCOLOR}sudo zypper install ./${file##*/}\n"
+else
+	echo -e "\n${GREEN}Install:\n\n${NOCOLOR}sudo dnf install ./${file##*/}\n"
+fi
+
+exit 0

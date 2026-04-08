@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Copyright Brad Hermanson 2026
+#
+# This file is part of Aletheia.
+#
+# Aletheia is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version.
+#
+# Aletheia is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License along
+# with Aletheia. If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>.
+
+NAME="aletheia-mobile"
+CWD="$(pwd)"
+SRCDIR="${SRCDIR:-..}"
+VERSION=3
+DIR="$NAME-$VERSION"
+
+cd "$SRCDIR" || exit 1
+if [ ! -d "$NAME-$VERSION" ]; then
+	DIR="$NAME"
+fi
+
+tar -czvf "$CWD/$NAME-$VERSION.tar.gz" --exclude=.git --exclude=.github --exclude="$NAME-$VERSION.tar.gz" --owner "$(whoami)" --group "$(groups | cut -d' ' -f1)" "$DIR"
+
+echo -e "\n$CWD/$NAME-$VERSION.tar.gz\n"
