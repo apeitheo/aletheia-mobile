@@ -30,6 +30,8 @@ install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-d
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-light.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme-light.css"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/aletheia-mobile.svg" "%{buildroot}/%{_datadir}/aletheia-mobile/aletheia-mobile.svg"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/doc/aletheia-mobile/LICENSE" "%{buildroot}/%{_docdir}/aletheia-mobile/LICENSE"
+cp -p %%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/language.* "%{buildroot}/%{_datadir}/aletheia-mobile/"
+chmod 644 %{buildroot}/%{_datadir}/aletheia-mobile/language.*
 
 %files
 %attr(0755, root, root) %{_bindir}/aletheia-mobile
@@ -39,8 +41,11 @@ install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/doc/aletheia-mobile/LIC
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-dark.css
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-light.css
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/aletheia-mobile.svg
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/language.*
 %doc %attr(0644, root, root) %{_docdir}/aletheia-mobile/LICENSE
 
 %changelog
+* Wed Apr 8 2026 Brad Hermanson 1.1
+- Fixed missing language.* files.
 * Mon Mar 16 2026 Brad Hermanson 1.0
 - Initial release.
