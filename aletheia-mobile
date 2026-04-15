@@ -193,7 +193,12 @@ UNHOOK=false
 
 rm "$ALETHEIA/mpv_pipe"* 2>/dev/null
 rm "$ALETHEIA/start"* 2>/dev/null
-mpv --input-terminal=yes --cache-pause-initial=yes --video=no --idle --volume=$MAX_VOLUME --input-ipc-server="$MPV_PIPE" --hr-seek=yes --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} </dev/null >/dev/null 2>/dev/null &
+if [ -n "$ANDROID_ROOT" ]; then
+	flags="--opensles-buffer-size-in-ms=500"
+else
+	flags="--pulse-buffer=1500"
+fi
+mpv --gapless-audio=yes "$flags" --hr-seek=yes --input-terminal=yes --cache-pause-initial=yes --video=no --idle --volume=$MAX_VOLUME --input-ipc-server="$MPV_PIPE" --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} </dev/null 2>/dev/null &
 MPV_PID="$!"
 
 touch -m "$ALETHEIA/start$$"
@@ -336,7 +341,7 @@ fi
 exec 3<> "$MPV_PIPE"
 exec 4<> "$WEB_PIPE"
 
-mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
+mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 TOTAL_QUEUE="${#QUEUE[@]}"
 
 echo -n "" > "$ALETHEIA/incoming"
@@ -382,7 +387,7 @@ fade_volume() {
 					VOLUME=0
 				fi
 
-				echo -e "{ \"command\": [\"set_property\", \"volume\", \"$VOLUME\"] }" | socat - "$MPV_PIPE" >/dev/null
+				echo -e "set volume $VOLUME" | socat - "$MPV_PIPE" >/dev/null
 
 				echo "$VOLUME" > "$INT_PIPE"
 			elif [ "$down" == true ]; then
@@ -399,7 +404,7 @@ fade_volume() {
 			elif [ "$VOLUME" -lt "0" ]; then
 				VOLUME=0
 			fi
-			echo -e "{ \"command\": [\"set_property\", \"volume\", \"$VOLUME\"] }" | socat - "$MPV_PIPE" >/dev/null
+			echo -e "set volume $VOLUME" | socat - "$MPV_PIPE" >/dev/null
 
 			echo "$VOLUME" > "$INT_PIPE"
 			if [ "$up" == true ]; then
@@ -426,7 +431,7 @@ fade_volume() {
 				echo stop | socat - "$MPV_PIPE" >/dev/null
 				return
 			elif [ "$c" == "p" ] && [ "$up" == false ]; then
-				echo -e "{ \"command\": [\"set_property\", \"volume\", \"0\"] }" | socat - "$MPV_PIPE" >/dev/null
+				echo -e "set volume 0" | socat - "$MPV_PIPE" >/dev/null
 				return
 			fi
 			x=$((x+1))
@@ -505,13 +510,10 @@ launch_mpv() {
 	_title="${_title%.*}"
 	i=25
 	if ! ps -p "$MPV_PID" >/dev/null; then
-		#rm "$MPV_PIPE"
-		#mpv --input-terminal=no --video=no --idle --volume="$VOL" --input-ipc-server="$MPV_PIPE" --hr-seek=yes --speed="$(calc -pd "2^($INTERVAL/$EDO)")" --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} --ao=pulse --pitch="$(calc -pd "2^($INTERVAL/$EDO)")" "${QUEUE[$1]}" </dev/null >/dev/null &
-		#MPV_PID="$!"
 		exit 1
 	else
 		spd=$(calc -pd "2^($INTERVAL/$EDO)")
-		echo -e "set ab-loop-a 0\nset ab-loop-b 0\nset loop-file 0\nloadfile \"${QUEUE[$1]}\" replace\nset pitch $spd\n{ \"command\": [\"set_property\", \"volume\", \"$VOL\"] }\nset speed $spd\n{ \"command\": [\"set_property\", \"pause\", false] }" | socat - "$MPV_PIPE" >/dev/null
+		echo -e "loadfile \"${QUEUE[$1]}\" replace -1 pause=no,pitch=$spd,speed=$spd,volume=$VOL,ab-loop-a=0,ab-loop-b=0,loop-file=0\nset af \"equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB}\"" | socat - "$MPV_PIPE" >/dev/null
 		LOOP=false
 	fi
 }
@@ -890,9 +892,9 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		DISPLAY_OPTIONS=false
 		get_system_volume
 		if [ "$((${SYSTEM_VOLUME_LEFT//%/}+2))" -gt "100" ]; then
-			echo '{ "command": ["set_property", "volume", 100] }' | socat - "$MPV_PIPE" >/dev/null
+			echo 'set volume 100' | socat - "$MPV_PIPE" >/dev/null
 		else
-			echo '{ "command": ["add", "volume", 2] }' | socat - "$MPV_PIPE" >/dev/null
+			echo 'add volume 2' | socat - "$MPV_PIPE" >/dev/null
 		fi
 		get_system_volume
 		speak " $SYSTEM_VOLUME_RIGHT" &
@@ -921,15 +923,16 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		echo -e "$(word_lookup "UNLOCKED")" > "$INT_PIPE"
 		;;
 	'P')
-		echo stop | socat - "$MPV_PIPE" >/dev/null
-		echo -e "$(word_lookup "LOADING")" > "$INT_PIPE"
-		unset QUEUE
-		mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
-		TOTAL_QUEUE="${#QUEUE[@]}"
-		POSITION=0
 		if [ "$STAY_STOPPED" == false ]; then
 			fade_volume
 		fi
+		echo stop | socat - "$MPV_PIPE" >/dev/null
+		echo -e "$(word_lookup "LOADING")" > "$INT_PIPE"
+		unset QUEUE
+		mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
+		TOTAL_QUEUE="${#QUEUE[@]}"
+		POSITION=0
+		_title=
 		write_current_queue
 		speak_title
 			
@@ -957,15 +960,16 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		fi
 		;;
 	'S')
+		if [ "$STAY_STOPPED" == false ]; then
+			fade_volume
+		fi
 		echo stop | socat - "$MPV_PIPE" >/dev/null
 		echo -e "$(word_lookup "LOADING")" > "$INT_PIPE"
 		unset QUEUE
 		mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
 		TOTAL_QUEUE="${#QUEUE[@]}"
 		POSITION=0
-		if [ "$STAY_STOPPED" == false ]; then
-			fade_volume
-		fi
+		_title=
 		write_current_queue
 		speak_title
 			
@@ -1176,14 +1180,14 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 				if [ "$STAY_STOPPED" == false ]; then
 					fade_volume
 				fi
-				STAY_STOPPED=false
 				STOP=false
 				echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 				speak "$(word_lookup "play")" &
 				#update_cover_art "$POSITION"
 				launch_mpv "$POSITION"
+				STAY_STOPPED=false
 				write_current_queue
-				echo '{ "command": ["set_property", "pause", false] }' | socat - "$MPV_PIPE" >/dev/null
+				echo 'set pause no' | socat - "$MPV_PIPE" >/dev/null
 				UNHOOK=false
 			else
 				echo cycle pause | socat - "$MPV_PIPE" >/dev/null
@@ -1465,12 +1469,12 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 	'M')
 		if [ "$MUTE" == true ]; then
 			MUTE=false
-			echo '{ "command": ["cycle", "mute"] }' | socat - "$MPV_PIPE" >/dev/null
+			echo cycle mute | socat - "$MPV_PIPE" >/dev/null
 			speak "$(word_lookup "unmuted")" &
 		else
 			MUTE=true
 			speak "$(word_lookup "muted")"
-			echo '{ "command": ["cycle", "mute"] }' | socat - "$MPV_PIPE" >/dev/null
+			echo cycle mute | socat - "$MPV_PIPE" >/dev/null
 		fi
 		;;
 	'D')
@@ -1481,6 +1485,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		else
 			((POSITION++))
 		fi
+		_title=
 		write_current_queue
 		speak_title
 			
@@ -1500,7 +1505,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 	"\\")
 		if [ "$STAY_STOPPED" == false ]; then
 			if [ "$PAUSE" == true ]; then
-				echo -e "seek 0 absolute\n{ \"command\": [\"set_property\", \"pause\", false] }" | socat - "$MPV_PIPE" >/dev/null
+				echo -e "seek 0 absolute\nset pause no" | socat - "$MPV_PIPE" >/dev/null
 			else
 				echo -e "seek 0 absolute" | socat - "$MPV_PIPE" >/dev/null
 			fi
@@ -1533,7 +1538,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		else
 			FADE_VOLUME=false
 			speak "$(word_lookup "fade off")" &
-			echo -e "$(word_lookup "LOOP OFF")" > "$INT_PIPE"
+			echo -e "$(word_lookup "FADE OFF")" > "$INT_PIPE"
 		fi
 		;;
 	'&')
