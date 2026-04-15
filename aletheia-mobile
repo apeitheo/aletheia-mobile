@@ -30,20 +30,27 @@ _title=
 REVERT_TO="$MAX_VOLUME"
 AUDIO_FORMATS="mp3,flac"
 regex=".*\.\(${AUDIO_FORMATS//,/\\|}\)$"
+SPEECH_ENGINE="espeak-ng"
 
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
 RED="\033[1;31m"
+YELLOW="\033[1;33m"
 
 QUIT=false
 check_dep() {
 	local dependency_name="$1"
+	local only_warn="$2"
 
-	echo -ne "Checking for $dependency_name... "
+	echo -ne "${NOCOLOR}Checking for $dependency_name... "
 
 	if [ ! -x "$(command -v "$dependency_name")" ]; then
-		echo -e "${RED}no${NOCOLOR}"
-		QUIT=true
+		if [ "$only_warn" != true ]; then
+			echo -e "${RED}no${NOCOLOR}"
+			QUIT=true
+		else
+			echo -e "${YELLOW}no${NOCOLOR}"
+		fi
 	else
 		echo -e "${GREEN}yes${NOCOLOR}"
 	fi
@@ -60,6 +67,7 @@ check_dep node
 check_dep inotifywait
 check_dep socat
 check_dep jq
+check_dep gtts-cli true
 
 echo
 
@@ -102,11 +110,25 @@ if [ -e "$CONFIG_FILE" ]; then
 	value2="${value2#*=}"
 	value2="$(sed "s/^[[:space:]]*//g;s/\"//g;s/'//g" <<< "$value2")"
 
+	value3="$(grep -i "^SPEECH_ENGINE[[:space:]]*=" < "$CONFIG_FILE")"
+	value3="${value3#*=}"
+	value3="$(sed "s/^[[:space:]]*//g;s/\"//g;s/'//g" <<< "$value3")"
+
 	if [ -n "$value1" ]; then
 		value="$value1"
 	fi
 	if [ -n "$value2" ]; then
 		sounds_value="$value2"
+	fi
+	if [ -n "$value3" ]; then
+		SPEECH_ENGINE="$value3"
+		case "$SPEECH_ENGINE" in
+			"gtts"|"gtts-cli"|"espeak-ng"|"espeak")
+				;;
+			*)
+				SPEECH_ENGINE="espeak-ng"
+				;;
+		esac
 	fi
 fi
 
@@ -148,7 +170,6 @@ if [ "$PASS" == false ]; then
 fi
 
 VOICE_ENABLED=false
-SPEECH_ENGINE="espeak-ng"
 TITLE_ONLY=false
 
 if [ ! -e "$ALETHEIA" ]; then
@@ -289,14 +310,6 @@ speak() {
 		fi
 	fi
 }
-
-#kill_speak() {
-#	if [ "$SPEECH_ENGINE" == "gtts" ]; then
-#		pkill gtts-cli
-#	else
-#		pkill espeak-ng
-#	fi
-#}
 
 add_downloaded() {
 	sort -o "$ALETHEIA/incoming" "$ALETHEIA/incoming"
@@ -811,6 +824,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		echo "$_BASS : $_MID : $_TREB" > "$INT_PIPE"
 		;;
 	'a')
+		DISPLAY_OPTIONS=false
 		if [ "$LANGUAGE" == "English" ]; then
 			LANGUAGE="German"
 			echo "German" > "$INT_PIPE"
@@ -1537,8 +1551,12 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			echo -e "$(word_lookup "FADE ON")" > "$INT_PIPE"
 		else
 			FADE_VOLUME=false
-			speak "$(word_lookup "fade off")" &
-			echo -e "$(word_lookup "FADE OFF")" > "$INT_PIPE"
+			if [ "$STAY_STOPPED" == false ]; then
+				speak "$(word_lookup "fade off")" &
+				echo -e "$(word_lookup "FADE OFF")" > "$INT_PIPE"
+			else
+				echo -e "$(word_lookup "NOTHING PLAYING")" > "$INT_PIPE"
+			fi
 		fi
 		;;
 	'&')
@@ -1586,8 +1604,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			fi
 		else
 			echo -e "$(word_lookup "NOTHING PLAYING")" > "$INT_PIPE"
-			sleep 1.5
-			echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
+			DISPLAY_OPTIONS=false
 		fi
 		;;
 	'0')

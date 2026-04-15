@@ -15,6 +15,7 @@ Requires: inotify-tools
 Requires: nodejs
 Requires: socat
 Requires: jq
+Suggests: gtts
 BuildArch: noarch
 
 %description
@@ -45,6 +46,8 @@ chmod 644 %{buildroot}/%{_datadir}/aletheia-mobile/language.*
 %doc %attr(0644, root, root) %{_docdir}/aletheia-mobile/LICENSE
 
 %changelog
+* Tue Apr 14 2026 Brad Hermanson 1.2
+- Added gtts as a weak dependency.
 * Wed Apr 8 2026 Brad Hermanson 1.1
 - Fixed missing language.* files.
 * Mon Mar 16 2026 Brad Hermanson 1.0

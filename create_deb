@@ -47,6 +47,7 @@ Version: ${VERSION}
 Architecture: all
 Maintainer: Brad Hermanson <apeitheo@gmail.com>
 Depends: bc, calc, espeak-ng, ffmpeg, libimage-exiftool-perl, mpv, nodejs, inotify-tools, jq, socat
+Suggests: gtts
 Section: sound
 Homepage: https://github.com/apeitheo/$NAME
 Description: A media player with speed controls and voice feedback.

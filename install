@@ -79,6 +79,7 @@ check_dep node
 check_dep inotifywait
 check_dep jq
 check_dep socat
+check_dep gtts-cli true
 
 if [ "$QUIT" == true ]; then
 	echo -ne "\n${RED}Error: ${NOCOLOR}Missing dependencies.\n\n"

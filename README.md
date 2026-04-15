@@ -20,6 +20,9 @@
 * **exiftool**
 * **espeak-ng**
 
+## Optional Dependencies
+* **gtts**
+
 ## Setting Music Directory
 
 Add or modify the following line in ~/.aletheia-mobile/config:
@@ -28,7 +31,7 @@ Add or modify the following line in ~/.aletheia-mobile/config:
 MUSIC_DIR=/full/linux/path
 ```
 
-## Setting Language
+## Setting Language and Speech Engine
 
 Add or modify the following line in ~/.aletheia-mobile/config:
 
@@ -37,6 +40,12 @@ LANGUAGE=German
 ```
 
 Available options are English, German, Spanish, Hindi, Chinese, and Japanese.
+
+```bash
+SPEECH_ENGINE=gtts
+```
+
+Available options are gtts (or gtts-cli) for a natural voice that downloads speech clips from the Internet and espeak (or espeak-ng) for a fast, local speech engine (Default).
 
 ## Key Controls
 
