@@ -28,7 +28,7 @@ fi
 
 NAME="aletheia-mobile"
 VERSION=3
-REVISION=2
+REVISION=3
 SRCDIR=${SRCDIR:-"$(pwd)"}
 TMPDIR="/tmp/${NAME}_${VERSION}-${REVISION}_all"
 
@@ -55,7 +55,7 @@ EOF
 
 install -m 755 "$SRCDIR/$NAME" "$TMPDIR/usr/bin/"
 install -m 644 "$SRCDIR/index.html" "$TMPDIR/usr/share/$NAME/"
-install -m 644 "$SRCDIR/webserver.js" "$TMPDIR/usr/share/$NAME/"
+install -m 644 "$SRCDIR/aletheia-webserver.js" "$TMPDIR/usr/share/$NAME/"
 install -m 644 "$SRCDIR/theme"* "$TMPDIR/usr/share/$NAME/"
 install -m 644 "$SRCDIR/language"* "$TMPDIR/usr/share/$NAME/"
 install -m 644 "$SRCDIR/aletheia-mobile.svg" "$TMPDIR/usr/share/$NAME/"

@@ -95,9 +95,9 @@ list="$(pgrep -f "aletheia-mobile" | grep -v "^$$$")"
 for i in $list; do
 	kill "$i" 2>/dev/null
 done
-pkill -f inotifywait 2>/dev/null
-pkill -f node 2>/dev/null
-pkill -f mpv 2>/dev/null
+pkill -f "^inotifywait -m -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
+pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
+pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
 
 value="$HOME/Music"
 sounds_value="$HOME/Sounds"
@@ -219,7 +219,7 @@ if [ -n "$ANDROID_ROOT" ]; then
 else
 	flags="--pulse-buffer=1500"
 fi
-mpv --gapless-audio=yes "$flags" --hr-seek=yes --input-terminal=yes --cache-pause-initial=yes --video=no --idle --volume=$MAX_VOLUME --input-ipc-server="$MPV_PIPE" --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} </dev/null 2>/dev/null &
+mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER --gapless-audio=yes "$flags" --hr-seek=yes --input-terminal=yes --cache-pause-initial=yes --video=no --idle --volume=$MAX_VOLUME --input-ipc-server="$MPV_PIPE" --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} </dev/null 2>/dev/null &
 MPV_PID="$!"
 
 touch -m "$ALETHEIA/start$$"
@@ -273,39 +273,37 @@ is_num() {
 speak() {
 	if [ "$VOICE_ENABLED" == true ] || [ "$2" == true ]; then
 		if [ "$SPEECH_ENGINE" == "gtts" ] || [ "$SPEECH_ENGINE" == "gtts-cli" ]; then
-			pkill gtts-cli
-			pkill -f "mpv -$"
+			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$"
 			if [ "$LANGUAGE" == "German" ];then
-				gtts-cli -l de "${1//-/,}," | mpv - &
+				gtts-cli -l de "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Spanish" ]; then
-				gtts-cli -l es "${1//-/,}," | mpv - &
+				gtts-cli -l es "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Hindi" ]; then
-				gtts-cli -l hi "${1//-/,}," | mpv - &
+				gtts-cli -l hi "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Chinese" ]; then
-				gtts-cli -l zh "${1//-/,}," | mpv - &
+				gtts-cli -l zh "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Japanese" ]; then
-				gtts-cli -l ja "${1//-/,}," | mpv - &
+				gtts-cli -l ja "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			else
-				gtts-cli "${1//-/,}," | mpv - &
+				gtts-cli "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			fi
-		elif [ "$SPEECH_ENGINE" == "piper" ]; then
-			pkill piper
-			piper -m "en_US"*onnx "${1//-/,}" &
+		#elif [ "$SPEECH_ENGINE" == "piper" ]; then
+		#	pkill piper
+		#	piper -m "en_US"*onnx "${1//-/,}" &
 		else
-			pkill espeak-ng
-			pkill -f "mpv -$"
+			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$"
 			if [ "$LANGUAGE" == "German" ];then
-				espeak-ng -v de+m1 --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout -v de+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Spanish" ]; then
-				espeak-ng -v es+m1 --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout -v es+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Hindi" ]; then
-				espeak-ng -v hi+m1 --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout -v hi+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Chinese" ]; then
-				espeak-ng -v yue+m1 --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout -v yue+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Japanese" ]; then
-				espeak-ng -v ja+m1 --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout -v ja+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			else
-				espeak-ng --stdout "${1//-/,}" | mpv - &
+				espeak-ng --stdout "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			fi
 		fi
 	fi
@@ -464,16 +462,6 @@ EDO=60
 EDO_LIMIT="1000000"
 FFMPEG_PID=
 
-sleep_launch() {
-	sleep 5s
-	if [ ! -e "$ALETHEIA/.sleep" ]; then
-		kill "$ALETHEIA_PID"
-		pkill -f "^mpv"
-		pkill -f "^node.*webserver.js"
-		exit 0
-	fi
-}
-
 if [ -e "${QUEUE[0]}.locked" ]; then
 	IFS='/' read -r INTERVAL EDO _ < "${QUEUE[0]}.locked"
 fi
@@ -490,7 +478,6 @@ PAUSE_IND=1
 echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
 
 update_cover_art() {
-		pkill -f ^ffmpeg
 		fp="${QUEUE[$1]##*/}"
 		{
 			if [ ! -e "${QUEUE[$1]}.art" ]; then
@@ -504,6 +491,8 @@ update_cover_art() {
 		} &
 		FFMPEG_PID="$!"
 }
+
+update_cover_art "0"
 
 launch_mpv() {
 	loop_sub=0.05000
@@ -531,7 +520,7 @@ launch_mpv() {
 	fi
 }
 
-node "$ALETHEIA_DATA_DIR/webserver.js" &
+node "$ALETHEIA_DATA_DIR/aletheia-webserver.js" &
 NODE_PID="$!"
 
 echo
@@ -1627,18 +1616,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			STOP=true
 			speak "$(word_lookup "playback stopped")" &
 			echo -e "$(word_lookup "HELD")" > "$INT_PIPE"
-		fi
-		;;
-	'Y')
-		if [ "$SLEEP" == true ]; then
-			SLEEP=false
-			speak "$(word_lookup "sleep, off")" &
-			touch "$ALETHEIA/.sleep"
-		else
-			SLEEP=true
-			speak "$(word_lookup "sleep, on")" &
-			rm "$ALETHEIA/.sleep"
-			sleep_launch &
 		fi
 		;;
 	'y')

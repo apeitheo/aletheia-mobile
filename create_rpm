@@ -28,7 +28,7 @@ fi
 
 NAME="aletheia-mobile"
 VERSION=3
-REVISION=2
+REVISION=3
 SRCDIR=${SRCDIR:-"$(pwd)"}
 TMPDIR="/tmp/rpm-package-$NAME/"
 
@@ -47,7 +47,7 @@ mkdir -p "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
 
 cp "$SRCDIR/$NAME" "$TMPDIR/rpmbuild/SOURCES/usr/bin/"
 cp "$SRCDIR/index.html" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
-cp "$SRCDIR/webserver.js" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
+cp "$SRCDIR/aletheia-webserver.js" "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
 cp "$SRCDIR/LICENSE" "$TMPDIR/rpmbuild/SOURCES/usr/share/doc/$NAME/"
 cp "$SRCDIR/theme"* "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"
 cp "$SRCDIR/language"* "$TMPDIR/rpmbuild/SOURCES/usr/share/$NAME/"

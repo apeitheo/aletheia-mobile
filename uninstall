@@ -48,7 +48,7 @@ fi
 
 FILES+=("${DESTDIR}/bin/aletheia-mobile")
 FILES+=("${DESTDIR}/share/aletheia-mobile/index.html")
-FILES+=("${DESTDIR}/share/aletheia-mobile/webserver.js")
+FILES+=("${DESTDIR}/share/aletheia-mobile/aletheia-webserver.js")
 FILES+=("${DESTDIR}/share/doc/aletheia-mobile/LICENSE")
 FILES+=("${DESTDIR}/share/aletheia-mobile/theme"*".css")
 FILES+=("${DESTDIR}/share/aletheia-mobile/language."*)

@@ -25,7 +25,7 @@ A media player with pitch and tempo controls using music intervals with the abil
 
 install -D -m 755 "%%TMPDIR%%/rpmbuild/SOURCES/usr/bin/aletheia-mobile" "%{buildroot}/%{_bindir}/aletheia-mobile"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/index.html" "%{buildroot}/%{_datadir}/aletheia-mobile/index.html"
-install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/webserver.js" "%{buildroot}/%{_datadir}/aletheia-mobile/webserver.js"
+install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/aletheia-webserver.js" "%{buildroot}/%{_datadir}/aletheia-mobile/aletheia-webserver.js"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme.css"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-dark.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme-dark.css"
 install -D -m 644 "%%TMPDIR%%/rpmbuild/SOURCES/usr/share/aletheia-mobile/theme-light.css" "%{buildroot}/%{_datadir}/aletheia-mobile/theme-light.css"
@@ -37,7 +37,7 @@ chmod 644 %{buildroot}/%{_datadir}/aletheia-mobile/language.*
 %files
 %attr(0755, root, root) %{_bindir}/aletheia-mobile
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/index.html
-%attr(0644, root, root) %{_datadir}/aletheia-mobile/webserver.js
+%attr(0644, root, root) %{_datadir}/aletheia-mobile/aletheia-webserver.js
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/theme.css
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-dark.css
 %attr(0644, root, root) %{_datadir}/aletheia-mobile/theme-light.css
@@ -46,6 +46,8 @@ chmod 644 %{buildroot}/%{_datadir}/aletheia-mobile/language.*
 %doc %attr(0644, root, root) %{_docdir}/aletheia-mobile/LICENSE
 
 %changelog
+* Thu Apr 16 2026 Brad Hermanson 1.3
+- Moved webserver.js to aletheia-webserver.js
 * Tue Apr 14 2026 Brad Hermanson 1.2
 - Added gtts as a weak dependency.
 * Wed Apr 8 2026 Brad Hermanson 1.1

@@ -105,7 +105,7 @@ fi
 if ! install -m 644 index.html "$DESTDIR/share/$NAME/"; then
 	FAIL=true
 fi
-if ! install -m 644 webserver.js "$DESTDIR/share/$NAME/"; then
+if ! install -m 644 aletheia-webserver.js "$DESTDIR/share/$NAME/"; then
 	FAIL=true
 fi
 if ! install -m 644 LICENSE "$DESTDIR/share/doc/$NAME/"; then
@@ -125,7 +125,7 @@ sed -i "/^ALETHEIA_DATA_DIR/s#.*#ALETHEIA_DATA_DIR=\"${DESTDIR}/share/aletheia-m
 
 FILES+=("${DESTDIR}/bin/aletheia-mobile")
 FILES+=("${DESTDIR}/share/aletheia-mobile/index.html")
-FILES+=("${DESTDIR}/share/aletheia-mobile/webserver.js")
+FILES+=("${DESTDIR}/share/aletheia-mobile/aletheia-webserver.js")
 FILES+=("${DESTDIR}/share/doc/aletheia-mobile/LICENSE")
 FILES+=("${DESTDIR}/share/aletheia-mobile/theme"*".css")
 FILES+=("${DESTDIR}/share/aletheia-mobile/language."*)

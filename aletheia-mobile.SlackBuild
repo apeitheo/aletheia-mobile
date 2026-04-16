@@ -24,7 +24,7 @@ CWD="$(pwd)"
 
 PRGNAM=aletheia-mobile
 VERSION=${VERSION:-3}
-BUILD=${BUILD:-1}
+BUILD=${BUILD:-2}
 TAG=${TAG:-_SBo}
 PKGTYPE=${PKGTYPE:-tgz}
 ARCH=noarch
@@ -58,7 +58,7 @@ cd "$PRGNAM-$VERSION" 2>/dev/null || cd "$PRGNAM"
 chown -R root:root .
 install -D -m 755 aletheia-mobile "$PKG/usr/bin/$PRGNAM"
 install -D -m 644 index.html "$PKG/usr/share/$PRGNAM/index.html"
-install -D -m 644 webserver.js "$PKG/usr/share/$PRGNAM/webserver.js"
+install -D -m 644 aletheia-webserver.js "$PKG/usr/share/$PRGNAM/aletheia-webserver.js"
 install -D -m 644 theme* "$PKG/usr/share/$PRGNAM/"
 install -D -m 644 language* "$PKG/usr/share/$PRGNAM/"
 install -D -m 644 aletheia-mobile.svg "$PKG/usr/share/$PRGNAM/aletheia-mobile.svg"

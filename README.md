@@ -23,12 +23,13 @@
 ## Optional Dependencies
 * **gtts**
 
-## Setting Music Directory
+## Setting Music and Soundscape Directories
 
 Add or modify the following line in ~/.aletheia-mobile/config:
 
 ```bash
-MUSIC_DIR=/full/linux/path
+MUSIC_DIR=/full/linux/path/Music/
+SOUND_DIR=/full/linux/path/Sounds/
 ```
 
 ## Setting Language and Speech Engine

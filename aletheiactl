@@ -217,9 +217,6 @@ case $1 in
 	"saverepeat")
 		echo -ne "#" >"$ALETHEIA"/"$FIFO"
 		;;
-	"sleep")
-		echo -ne "Y" >"$ALETHEIA"/"$FIFO"
-		;;
 	"scale")
 		echo -ne "u" >"$ALETHEIA"/"$FIFO"
 		;;
