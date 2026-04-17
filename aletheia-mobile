@@ -20,7 +20,6 @@
 ALETHEIA="$HOME/.aletheia-mobile/"
 LANGUAGE="English"
 ALETHEIA_DATA_DIR="$(dirname "$0")"
-ALETHEIA_PID="$$"
 CONFIG_FILE="$ALETHEIA/config"
 MAX_VOLUME="100"
 LOOP_MODE=false
@@ -31,6 +30,7 @@ REVERT_TO="$MAX_VOLUME"
 AUDIO_FORMATS="mp3,flac"
 regex=".*\.\(${AUDIO_FORMATS//,/\\|}\)$"
 SPEECH_ENGINE="espeak-ng"
+READ_ONLY=true
 
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
@@ -91,13 +91,36 @@ if command -v termux-wake-lock >/dev/null; then
 	termux-wake-lock
 fi
 
+MPV_PIPE="$ALETHEIA/mpv_pipe$$"
+INT_PIPE="$ALETHEIA/int_pipe"
+QUEUE_PIPE="$ALETHEIA/queue_pipe"
+TITLE_PIPE="$ALETHEIA/title_pipe"
+WEB_PIPE="$ALETHEIA/web_client_pipe$$"
+PAUSE_PIPE="$ALETHEIA/pause_pipe"
+
 list="$(pgrep -f "aletheia-mobile" | grep -v "^$$$")"
 for i in $list; do
 	kill "$i" 2>/dev/null
 done
-pkill -f "^inotifywait -m -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
-pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
-pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
+
+cleanup() {
+	pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
+	pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
+	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
+	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
+	rm -f "$ALETHEIA/start$$" "$ALETHEIA/incoming" "$ALETHEIA/renamed" 2>/dev/null
+	rm -f "$INT_PIPE" "$QUEUE_PIPE" "$MPV_PIPE" "$TITLE_PIPE" "$WEB_PIPE" "$PAUSE_PIPE" 2>/dev/null
+}
+
+cleanup_exit() {
+	cleanup
+	reset
+	exit 1
+}
+
+trap cleanup_exit SIGINT SIGTERM SIGHUP SIGQUIT
+
+cleanup
 
 value="$HOME/Music"
 sounds_value="$HOME/Sounds"
@@ -114,6 +137,10 @@ if [ -e "$CONFIG_FILE" ]; then
 	value3="${value3#*=}"
 	value3="$(sed "s/^[[:space:]]*//g;s/\"//g;s/'//g" <<< "$value3")"
 
+	value5="$(grep -i "^READ_ONLY[[:space:]]*=" < "$CONFIG_FILE")"
+	value5="${value5#*=}"
+	value5="$(sed "s/^[[:space:]]*//g;s/\"//g;s/'//g" <<< "$value5")"
+
 	if [ -n "$value1" ]; then
 		value="$value1"
 	fi
@@ -129,6 +156,9 @@ if [ -e "$CONFIG_FILE" ]; then
 				SPEECH_ENGINE="espeak-ng"
 				;;
 		esac
+	fi
+	if [ -n "$value5" ]; then
+		READ_ONLY="$value5"
 	fi
 fi
 
@@ -174,16 +204,12 @@ TITLE_ONLY=false
 
 if [ ! -e "$ALETHEIA" ]; then
 	if ! mkdir "$ALETHEIA"; then
+		echo "${RED}Error: ${NOCOLOR}Could not create $ALETHEIA"
 		exit 1
 	fi
 fi
 
-MPV_PIPE="$ALETHEIA/mpv_pipe$$"
-INT_PIPE="$ALETHEIA/int_pipe"
-QUEUE_PIPE="$ALETHEIA/queue_pipe"
-TITLE_PIPE="$ALETHEIA/title_pipe"
-WEB_PIPE="$ALETHEIA/web_client_pipe$$"
-PAUSE_PIPE="$ALETHEIA/pause_pipe"
+mkdir -p "$ALETHEIA/art" "$ALETHEIA/locked" "$ALETHEIA/loops" "$ALETHEIA/archived"
 
 rm "$INT_PIPE" 2>/dev/null
 mkfifo "$INT_PIPE"
@@ -273,7 +299,7 @@ is_num() {
 speak() {
 	if [ "$VOICE_ENABLED" == true ] || [ "$2" == true ]; then
 		if [ "$SPEECH_ENGINE" == "gtts" ] || [ "$SPEECH_ENGINE" == "gtts-cli" ]; then
-			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$"
+			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
 			if [ "$LANGUAGE" == "German" ];then
 				gtts-cli -l de "${1//-/,}," | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Spanish" ]; then
@@ -291,7 +317,7 @@ speak() {
 		#	pkill piper
 		#	piper -m "en_US"*onnx "${1//-/,}" &
 		else
-			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$"
+			pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
 			if [ "$LANGUAGE" == "German" ];then
 				espeak-ng --stdout -v de+m1 "${1//-/,}" | mpv --title=ALETHEIA_MOBILE_INTERNAL - &
 			elif [ "$LANGUAGE" == "Spanish" ]; then
@@ -328,12 +354,6 @@ add_downloaded() {
 	DISPLAY_OPTIONS=false
 }
 
-if [ ! -e "$ALETHEIA/archived/" ]; then
-	if ! mkdir "$ALETHEIA/archived/"; then
-		exit 1
-	fi
-fi
-
 if [ ! -e "$MUSIC_DIR" ]; then
 	echo "$MUSIC_DIR: No such directory"
 	exit 1
@@ -357,14 +377,15 @@ TOTAL_QUEUE="${#QUEUE[@]}"
 
 echo -n "" > "$ALETHEIA/incoming"
 echo -n "" > "$ALETHEIA/renamed"
-(inotifywait -m -e create -e moved_to --format '%w%f' "$MUSIC_DIR" | while read -r new_file
+(inotifywait -mr -e create -e moved_to --format '%w%f' "$MUSIC_DIR" | while read -r new_file
 do
 	basename="$(basename "$new_file")"
 	if [ "${basename:0:1}" != "." ]; then
 		echo "$new_file" >>"$ALETHEIA/incoming"
 	fi
-done) &
-INOTIFY_PID="$!"
+done) >/dev/null 2>&1 &
+
+echo -e "Starting inotifywait... ${GREEN}ok${NOCOLOR}"
 
 if [ "$TOTAL_QUEUE" == "0" ]; then
 	echo "Nothing found in $MUSIC_DIR"
@@ -379,7 +400,7 @@ fade_volume() {
 		up=false
 		down=true
 		PAUSE_IND=1
-		echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+		echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 		while [ "$VOLUME" -ge "0" ] && [ "$VOLUME" -le "100" ]; do
 			if [ "$up" == true ]; then
 				if [ "$VOLUME" == "100" ]; then
@@ -437,7 +458,7 @@ fade_volume() {
 				PAUSE=true
 				_title=
 				PAUSE_IND=1
-				echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 				echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
 				echo stop | socat - "$MPV_PIPE" >/dev/null
 				return
@@ -460,10 +481,10 @@ update_limits() {
 INTERVAL=0
 EDO=60
 EDO_LIMIT="1000000"
-FFMPEG_PID=
 
-if [ -e "${QUEUE[0]}.locked" ]; then
-	IFS='/' read -r INTERVAL EDO _ < "${QUEUE[0]}.locked"
+file="$ALETHEIA/locked/${QUEUE[0]##*/}"
+if [ -e "${file}.locked" ]; then
+	IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 fi
 if [ "$STAY_STOPPED" == false ]; then
 	echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
@@ -475,21 +496,21 @@ update_limits
 POSITION=0
 
 PAUSE_IND=1
-echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 
 update_cover_art() {
 		fp="${QUEUE[$1]##*/}"
+		file="$ALETHEIA/art/${fp}"
 		{
-			if [ ! -e "${QUEUE[$1]}.art" ]; then
+			if [ ! -e "${file}.art" ]; then
 				if ffmpeg -i "${QUEUE[$1]}" -an -vcodec copy "$ALETHEIA/$fp.jpg" >/dev/null 2>&1; then
-					mv "$ALETHEIA/$fp.jpg" "${QUEUE[$1]}.art" 2>/dev/null
+					mv "$ALETHEIA/$fp.jpg" "${file}.art" 2>/dev/null
 				fi
-				echo "1/$POS/${QUEUE[$1]}" > "$PAUSE_PIPE" &
+				echo "$PAUSE_IND/$POS/${file}" > "$PAUSE_PIPE" &
 			else
-				echo "1/$POS/${QUEUE[$1]}" > "$PAUSE_PIPE" &
+				echo "$PAUSE_IND/$POS/${file}" > "$PAUSE_PIPE" &
 			fi
 		} &
-		FFMPEG_PID="$!"
 }
 
 update_cover_art "0"
@@ -521,26 +542,12 @@ launch_mpv() {
 }
 
 node "$ALETHEIA_DATA_DIR/aletheia-webserver.js" &
-NODE_PID="$!"
 
 echo
 
 title="${QUEUE[0]##*/}"
-printf "%s\n" "${QUEUE[@]}" | sed -n "$((first+1)),$((last+1))p" | rev | cut -d'.' -f2- | cut -d'/' -f1 | rev | sed -e "s/\n/<br\/>/g" >"$ALETHEIA/current_queue.new"
-
-mv "$ALETHEIA/current_queue.new" "$ALETHEIA/current_queue"
 
 update_limits
-
-cleanup_sigint() {
-	kill "$NODE_PID" 2>/dev/null
-	kill "$MPV_PID" 2>/dev/null
-	kill "$INOTIFY_PID" 2>/dev/null
-	reset
-	exit 1
-}
-
-trap cleanup_sigint SIGINT
 
 write_current_queue() {
 	if [ "$POSITION" -lt "3" ] || [ "$TOTAL_QUEUE" -le "5" ]; then
@@ -635,7 +642,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 	#POS="${POS%%,*}"
 	#POS="${POS//[[:space:]]/}"
 	POS=$(echo '{ "command": ["get_property", "percent-pos"] }' | socat - "$MPV_PIPE" | jq -r '.data')
-	echo "$PAUSE_IND/$POS/${QUEUE[POSITION]}" >"$PAUSE_PIPE"
+	echo "$PAUSE_IND/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" >"$PAUSE_PIPE"
 
 	tmp9="$(echo '{ "command": ["get_property", "idle-active"] }' | socat - "$MPV_PIPE")"
 	tmp9="${tmp9#*\"data\":}"
@@ -654,8 +661,9 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			speak_title
 			INTERVAL=0
 			EDO=60
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
 			update_cover_art "$POSITION"
@@ -668,8 +676,8 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 				launch_mpv "$POSITION"
 			else
 				STAY_STOPPED=true
-				PAUSE_IND=1
-				echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				PAUSE_IND=0
+				echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 				PAUSE=true
 				if [ "$DISPLAY_EQ" == true ]; then
 					echo "$_BASS : $_MID : $_TREB" > "$INT_PIPE"
@@ -683,7 +691,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			STAY_STOPPED=true
 			STOP=true
 			echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			LOOP_MODE=false
 		fi
 	fi
@@ -698,7 +706,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		if [ "$STAY_STOPPED" == false ]; then
 			STOP=false
 		fi
-		kill "$FFMPEG_PID" 2>/dev/null
 		if [ "$STAY_STOPPED" == false ] && [ "$UNHOOK" == false ] && [ "$PAUSE" == false ]; then
 			fade_volume
 		elif [ "$UNHOOK" == true ]; then
@@ -710,21 +717,22 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		if [ "$UNHOOK" == false ]; then
 			INTERVAL=0
 			EDO=60
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
 		fi
-		update_cover_art "$POSITION"
 		if [ "$STAY_STOPPED" == false ] && [ "$UNHOOK" == false ]; then
 			echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 			_title=
 			launch_mpv "$POSITION"
 			PAUSE=false
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "$PAUSE_IND/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			STOP=false
 		fi
+		update_cover_art "$POSITION"
 		write_current_queue
 		;;
 	'b')
@@ -737,7 +745,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		if [ "$STAY_STOPPED" == false ]; then
 			STOP=false
 		fi
-		kill "$FFMPEG_PID" 2>/dev/null
 		if [ "$STAY_STOPPED" == false ] && [ "$UNHOOK" == false ] && [ "$PAUSE" == false ]; then
 			fade_volume
 		elif [ "$UNHOOK" == true ]; then
@@ -749,19 +756,20 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		if [ "$UNHOOK" == false ]; then
 			INTERVAL=0
 			EDO=60
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
 		fi
-		update_cover_art "$POSITION"
 		if [ "$STAY_STOPPED" == false ] && [ "$UNHOOK" == false ]; then
 			echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 			launch_mpv "$POSITION"
 			PAUSE=false
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "$PAUSE_IND/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 		fi
+		update_cover_art "$POSITION"
 		write_current_queue
 		;;
 	'+')
@@ -869,7 +877,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			echo seek 5 relative | socat - "$MPV_PIPE" >/dev/null &
 			if [ "$PAUSE" == true ]; then
 				PAUSE_IND=1
-				echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			fi
 			speak "$(word_lookup "seek forward")" &
 		fi
@@ -879,7 +887,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			echo seek -5 relative | socat - "$MPV_PIPE" >/dev/null &
 			if [ "$PAUSE" == true ]; then
 				PAUSE_IND=1
-				echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			fi
 			speak "$(word_lookup "seek back")" &
 		fi
@@ -916,12 +924,14 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		speak "60" &
 		;;
 	'x')
-		echo -ne "$INTERVAL/$EDO/0" > "${QUEUE[POSITION]}.locked"
+		file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+		echo -ne "$INTERVAL/$EDO/0" > "${file}.locked"
 		speak "$(word_lookup "locked")" &
 		echo -e "$(word_lookup "LOCKED")" > "$INT_PIPE"
 		;;
 	'X')
-		rm -f "${QUEUE[POSITION]}.locked" 2>/dev/null
+		file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+		rm -f "${file}.locked" 2>/dev/null
 		speak "$(word_lookup "unlocked")" &
 		echo -e "$(word_lookup "UNLOCKED")" > "$INT_PIPE"
 		;;
@@ -941,8 +951,9 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			
 		INTERVAL=0
 		EDO=60
-		if [ -e "${QUEUE[POSITION]}.locked" ]; then
-			IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+		file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+		if [ -e "${file}.locked" ]; then
+			IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 		fi
 		update_limits
 		STOP=true
@@ -950,53 +961,66 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		LOOP_MODE=false
 		PAUSE=true
 		PAUSE_IND=1
-		echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+		echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 		update_cover_art "$POSITION"
 		if [ "$STAY_STOPPED" == false ]; then
 			echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 			launch_mpv "$POSITION"
 			PAUSE=false
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 		else
 			echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
 		fi
 		;;
 	'S')
-		if [ "$STAY_STOPPED" == false ]; then
-			fade_volume
-		fi
-		echo stop | socat - "$MPV_PIPE" >/dev/null
-		echo -e "$(word_lookup "LOADING")" > "$INT_PIPE"
-		unset QUEUE
-		mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
-		TOTAL_QUEUE="${#QUEUE[@]}"
-		POSITION=0
-		_title=
-		write_current_queue
-		speak_title
-			
-		INTERVAL=0
-		EDO=60
-		if [ -e "${QUEUE[POSITION]}.locked" ]; then
-			IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
-		fi
-		update_limits
-		STOP=true
-		STAY_STOPPED=true
-		LOOP_MODE=false
-		PAUSE=true
-		PAUSE_IND=1
-		echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
-		update_cover_art "$POSITION"
-		if [ "$STAY_STOPPED" == false ]; then
-			echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
-			PAUSE=false
-			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
-			launch_mpv "$POSITION"
-		else
-			echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
+		PASS=false
+		IFS=","
+		for i in $AUDIO_FORMATS; do
+			if ls "$SOUND_DIR"/*."$i" &>/dev/null; then
+				PASS=true
+				break
+			fi
+		done
+		unset IFS
+
+		if [ "$PASS" == true ]; then
+			if [ "$STAY_STOPPED" == false ]; then
+				fade_volume
+			fi
+			echo stop | socat - "$MPV_PIPE" >/dev/null
+			echo -e "$(word_lookup "LOADING")" > "$INT_PIPE"
+			unset QUEUE
+			mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
+			TOTAL_QUEUE="${#QUEUE[@]}"
+			POSITION=0
+			_title=
+			write_current_queue
+			speak_title
+
+			INTERVAL=0
+			EDO=60
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
+			fi
+			update_limits
+			STOP=true
+			STAY_STOPPED=true
+			LOOP_MODE=false
+			PAUSE=true
+			PAUSE_IND=1
+			echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
+			update_cover_art "$POSITION"
+			if [ "$STAY_STOPPED" == false ]; then
+				echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
+				PAUSE=false
+				PAUSE_IND=0
+				echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
+				launch_mpv "$POSITION"
+			else
+				echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
+			fi
 		fi
 		;;
 	'e')
@@ -1032,7 +1056,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			fi
 			POS=0
 			PAUSE_IND=1
-			echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			echo stop | socat - "$MPV_PIPE" >/dev/null
 			PAUSE=true
 		fi
@@ -1111,19 +1135,20 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			INTERVAL=0
 			EDO=60
 			STOP=false
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
-			update_cover_art "$POSITION"
 			if [ "$STAY_STOPPED" == false ]; then
 				fade_volume
 				echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 				launch_mpv "$POSITION"
 				PAUSE=false
 				PAUSE_IND=0
-				echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			fi
+			update_cover_art "$POSITION"
 		fi
 		write_current_queue
 		speak "$(word_lookup "added downloads")" &
@@ -1162,21 +1187,23 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		if [ "$UNHOOK" == true ]; then
 			INTERVAL=0
 			EDO=60
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
 		fi
 		if [ "$PAUSE" == true ] || [ "$UNHOOK" == true ]; then
 			PAUSE=false
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			if [ "$STAY_STOPPED" == true ] || [ "$UNHOOK" == true ];then
 				if [ "$STAY_STOPPED" == false ]; then
 					INTERVAL=0
 					EDO=60
-					if [ -e "${QUEUE[POSITION]}.locked" ]; then
-						IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+					file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+					if [ -e "${file}.locked" ]; then
+						IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 					fi
 					update_limits
 				fi
@@ -1197,7 +1224,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 				speak "$(word_lookup "play")" &
 			fi
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			_title="${QUEUE[POSITION]}"
 			_title="${_title##*/}"
 			_title="${_title%.*}"
@@ -1205,7 +1232,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		else
 			speak "$(word_lookup "pause")" &
 			PAUSE_IND=1
-			echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			echo cycle pause | socat - "$MPV_PIPE" >/dev/null
 			PAUSE=true
 		fi
@@ -1242,12 +1269,13 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		echo -e "$(word_lookup "END")" > "$INT_PIPE"
 		;;
 	'#')
-		echo -e "$start/$end" >"${QUEUE[POSITION]}.loops"
+		echo -e "$start/$end" >"$ALETHEIA/loops/${QUEUE[POSITION]##*/}.loops"
 		echo -e "$(word_lookup "SAVED")" > "$INT_PIPE"
 		;;
 	'?')
-		if [ -e "${QUEUE[POSITION]}.loops" ]; then
-			full="$(cat "${QUEUE[POSITION]}.loops")"
+		file="$ALETHEIA/loops/${QUEUE[POSITION]##*/}"
+		if [ -e "${file}.loops" ]; then
+			full="$(cat "${file}.loops")"
 			start="${full%/*}"
 			end="${full#*/}"
 			echo -e "set ab-loop-a $start\nset ab-loop-b $end\nseek $start absolute" | socat - "$MPV_PIPE" >/dev/null
@@ -1424,21 +1452,22 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			speak_title
 			INTERVAL=0
 			EDO=60
-			if [ -e "${QUEUE[POSITION]}.locked" ]; then
-				IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
 			fi
 			update_limits
-			update_cover_art "$POSITION"
 			if [ "$STAY_STOPPED" == false ]; then
 				fade_volume
 				launch_mpv "$POSITION"
 				echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
 				PAUSE=false
 				PAUSE_IND=0
-				echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+				echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 			else
 				echo -e "$((POSITION+1)) / $TOTAL_QUEUE" > "$INT_PIPE"
 			fi
+			update_cover_art "$POSITION"
 		else
 			speak "$(word_lookup "nothing found")" &
 		fi
@@ -1451,23 +1480,34 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		speak "$(word_lookup "click to archive file")" &
 		;;
 	'r')
-		artist="$(exiftool -Artist "${QUEUE[POSITION]}" | head -1 | cut -d':' -f2-)"
-		title="$(exiftool -Title "${QUEUE[POSITION]}" | head -1 | cut -d':' -f2-)"
-		artist="${artist//\//-}"
-		title="${title//\//-}"
-		cp "${QUEUE[POSITION]}" "${QUEUE[POSITION]}.bkp"
-		ext="${QUEUE[POSITION]##*.}"
-		mv "${QUEUE[POSITION]}" "$MUSIC_DIR/${artist# } - ${title# }.$ext"
-		if [ -e "${QUEUE[POSITION]}.art" ]; then
-			mv "${QUEUE[POSITION]}.art" "$MUSIC_DIR/${artist# } - ${title# }.$ext.art"
+		if [ "$READ_ONLY" == false ]; then
+			artist="$(exiftool -Artist "${QUEUE[POSITION]}" | head -1 | cut -d':' -f2-)"
+			title="$(exiftool -Title "${QUEUE[POSITION]}" | head -1 | cut -d':' -f2-)"
+			artist="${artist//\//-}"
+			title="${title//\//-}"
+			cp "${QUEUE[POSITION]}" "${QUEUE[POSITION]}.bkp"
+			ext="${QUEUE[POSITION]##*.}"
+			mv "${QUEUE[POSITION]}" "${QUEUE[POSITION]%/*}/${artist# } - ${title# }.$ext"
+			file="$ALETHEIA/art/${QUEUE[POSITION]##*/}"
+			file1="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			file2="$ALETHEIA/loops/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.art" ]; then
+				mv "${file}.art" "$ALETHEIA/art/${artist# } - ${title# }.$ext.art"
+			fi
+			if [ -e "${file1}.locked" ]; then
+				mv "${file1}.locked" "$ALETHEIA/locked/${artist# } - ${title# }.$ext.locked"
+			fi
+			if [ -e "${file2}.loops" ]; then
+				mv "${file2}.loops" "$ALETHEIA/loops/${artist# } - ${title# }.$ext.loops"
+			fi
+			echo -n "${QUEUE[POSITION]%/*}/${artist# } - ${title# }.$ext" >>"$ALETHEIA/renamed"
+			sort -o "$ALETHEIA/renamed" "$ALETHEIA/renamed"
+			QUEUE[POSITION]="${QUEUE[POSITION]%/*}/${artist# } - ${title# }.$ext"
+			write_current_queue
+		else
+			echo -e "$(word_lookup "OFF")" > "$INT_PIPE"
+			DISPLAY_OPTIONS=false
 		fi
-		if [ -e "${QUEUE[POSITION]}.locked" ]; then
-			mv "${QUEUE[POSITION]}.locked" "$MUSIC_DIR/${artist# } - ${title# }.$ext.locked"
-		fi
-		echo -n "$MUSIC_DIR/${artist# } - ${title# }.$ext" >>"$ALETHEIA/renamed"
-		sort -o "$ALETHEIA/renamed" "$ALETHEIA/renamed"
-		QUEUE[POSITION]="$MUSIC_DIR/${artist# } - ${title# }.$ext"
-		write_current_queue
 		;;
 	'M')
 		if [ "$MUTE" == true ]; then
@@ -1481,29 +1521,35 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		fi
 		;;
 	'D')
-		speak "$(word_lookup "archived file")" &	
-		mv "${QUEUE[POSITION]}" "$ALETHEIA/archived/"
-		if [ "$POSITION" == "$((TOTAL_QUEUE-1))" ]; then
-			POSITION=0
+		if [ "$READ_ONLY" == false ]; then
+			speak "$(word_lookup "archived file")" &
+			mv "${QUEUE[POSITION]}" "$ALETHEIA/archived/"
+			if [ "$POSITION" == "$((TOTAL_QUEUE-1))" ]; then
+				POSITION=0
+			else
+				((POSITION++))
+			fi
+			_title=
+			write_current_queue
+			speak_title
+
+			INTERVAL=0
+			EDO=60
+			file="$ALETHEIA/locked/${QUEUE[POSITION]##*/}"
+			if [ -e "${file}.locked" ]; then
+				IFS='/' read -r INTERVAL EDO _ < "${file}.locked"
+			fi
+			update_limits
+			echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
+			launch_mpv "$POSITION"
+			PAUSE=false
+			PAUSE_IND=0
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
+			update_cover_art "$POSITION"
 		else
-			((POSITION++))
+			echo -e "$(word_lookup "OFF")" > "$INT_PIPE"
+			DISPLAY_OPTIONS=false
 		fi
-		_title=
-		write_current_queue
-		speak_title
-			
-		INTERVAL=0
-		EDO=60
-		if [ -e "${QUEUE[POSITION]}.locked" ]; then
-			IFS='/' read -r INTERVAL EDO _ < "${QUEUE[POSITION]}.locked"
-		fi
-		update_limits
-		update_cover_art "$POSITION"
-		echo -e "$INTERVAL / $EDO" > "$INT_PIPE"
-		launch_mpv "$POSITION"
-		PAUSE=false
-		PAUSE_IND=0
-		echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
 		;;
 	"\\")
 		if [ "$STAY_STOPPED" == false ]; then
@@ -1515,7 +1561,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			PAUSE=false
 			speak "$(word_lookup "restarted")" &
 			PAUSE_IND=0
-			echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+			echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 		fi
 		;;
 	'<')
@@ -1554,7 +1600,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 				UNHOOK=false
 				if [ "$PAUSE" == false ]; then
 					PAUSE_IND=0
-					echo "0/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+					echo "0/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 				fi
 				POSITION=0
 
@@ -1584,7 +1630,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 				#fi
 				if [ "$PAUSE" == false ]; then
 					PAUSE_IND=1
-					echo "1/$POS/${QUEUE[POSITION]}" > "$PAUSE_PIPE" &
+					echo "1/$POS/$ALETHEIA/art/${QUEUE[POSITION]##*/}" > "$PAUSE_PIPE" &
 				fi
 				_title="${QUEUE[POSITION]}"
 				_title="${_title##*/}"

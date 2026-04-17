@@ -28,7 +28,7 @@ fi
 
 NAME="aletheia-mobile"
 VERSION=3
-REVISION=3
+REVISION=4
 SRCDIR=${SRCDIR:-"$(pwd)"}
 TMPDIR="/tmp/rpm-package-$NAME/"
 
@@ -69,10 +69,14 @@ fi
 
 rm -f "$path/RPMS/noarch/${NAME}-${VERSION}-"*".noarch.rpm" >/dev/null 2>&1
 
-cd "$TMPDIR" || exit 1
+if ! cd "$TMPDIR"; then
+	echo -e "\n${RED}Error: ${NOCOLOR}Could not enter $TMPDIR.\n"
+	exit 1
+fi
 
 if ! rpmbuild -bb rpmbuild/SPECS/"$NAME".spec; then
 	echo -e "\n${RED}Error: ${NOCOLOR}Package creation failed\n"
+	rm -rf "$TMPDIR"
 	exit 1
 fi
 
@@ -84,5 +88,7 @@ if [[ "$OS" == *"openSUSE"* ]]; then
 else
 	echo -e "\n${GREEN}Install:\n\n${NOCOLOR}sudo dnf install ./${file##*/}\n"
 fi
+
+rm -rf "$TMPDIR"
 
 exit 0

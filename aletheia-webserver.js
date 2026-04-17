@@ -74,7 +74,7 @@ const commandMap = {
     "/execute-command-sound": "i^2",
     "/execute-command-sort": "A",
     "/execute-command-shuffle": "R",
-    "/execute-command-delete": "Dy",
+    "/execute-command-delete": "D",
     "/execute-command-loopartist": "V",
     "/execute-command-loopsong": "e",
     "/execute-command-onlylocked": "$",

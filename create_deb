@@ -28,7 +28,7 @@ fi
 
 NAME="aletheia-mobile"
 VERSION=3
-REVISION=3
+REVISION=4
 SRCDIR=${SRCDIR:-"$(pwd)"}
 TMPDIR="/tmp/${NAME}_${VERSION}-${REVISION}_all"
 
@@ -63,14 +63,20 @@ install -m 644 "$SRCDIR/LICENSE" "$TMPDIR/usr/share/doc/$NAME/"
 
 sed -i "/^ALETHEIA_DATA_DIR/s#.*#ALETHEIA_DATA_DIR=\"/usr/share/$NAME/\"#g" "$TMPDIR/usr/bin/$NAME"
 
-cd "$TMPDIR" || exit 1
+if ! cd "$TMPDIR"; then
+	echo -e "\n${RED}Error: ${NOCOLOR}Could not enter $TMPDIR.\n"
+	exit 1
+fi
 chown -R root:root "$TMPDIR"
 dpkg-deb --build "$TMPDIR"
 if [ -e "/tmp/${NAME}_${VERSION}-${REVISION}_all.deb" ]; then
 	echo -e "\n${GREEN}Install:\n\n${NOCOLOR}sudo apt install /tmp/${NAME}_${VERSION}-${REVISION}_all.deb\n"
 else
-	echo -e "\n${RED}Error:$NOCOLOR Package creation failed\n"
+	echo -e "\n${RED}Error: ${NOCOLOR}Package creation failed\n"
+	rm -rf "$TMPDIR"
 	exit 1
 fi
+
+rm -rf "$TMPDIR"
 
 exit 0
