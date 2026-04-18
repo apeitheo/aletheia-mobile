@@ -104,8 +104,8 @@ for i in $list; do
 done
 
 cleanup() {
-	pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
-	pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
+	pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
+	pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
 	pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
@@ -338,10 +338,17 @@ speak() {
 }
 
 add_downloaded() {
-	sort -o "$ALETHEIA/incoming" "$ALETHEIA/incoming"
+	sort -u -o "$ALETHEIA/incoming" "$ALETHEIA/incoming"
 	comm -23 "$ALETHEIA/incoming" "$ALETHEIA/renamed" >"$ALETHEIA/incoming.new"
 	mv "$ALETHEIA/incoming.new" "$ALETHEIA/incoming"
 	list="$(grep -E "\.(${AUDIO_FORMATS//,/|})$" "$ALETHEIA/incoming" )"
+	final_list=""
+	while IFS= read -r file; do
+		if [[ -e "$file" ]]; then
+			final_list+="$file"$'\n'
+		fi
+	done <<< "$list"
+	list="${final_list%$'\n'}"
 	echo -n "" >"$ALETHEIA/incoming"
 	echo -n "" >"$ALETHEIA/renamed"
 	unset DOWNLOAD_POSITION
@@ -381,12 +388,12 @@ start_inotifywait() {
 	local directory="$1"
 	local already_running="$2"
 	if [ "$already_running" == true ]; then
-		pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
-		pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
+		pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
+		pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
 	fi
 	echo -n "" > "$ALETHEIA/incoming"
 	echo -n "" > "$ALETHEIA/renamed"
-	inotifywait -mr -e create -e moved_to --format '%w%f' "$directory" | while read -r new_file
+	inotifywait -mr -e create -e moved_from -e moved_to --format '%w%f' "$directory" | while read -r new_file
 	do
 		basename="$(basename "$new_file")"
 		if [ "${basename:0:1}" != "." ]; then
@@ -957,7 +964,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		unset QUEUE
 		mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 		TOTAL_QUEUE="${#QUEUE[@]}"
-		start_inotifywait "$MUSIC_DIR" true &
+		start_inotifywait "$MUSIC_DIR" true >/dev/null 2>&1 &
 		POSITION=0
 		_title=
 		write_current_queue
@@ -1007,7 +1014,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			unset QUEUE
 			mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
 			TOTAL_QUEUE="${#QUEUE[@]}"
-			start_inotifywait "$SOUND_DIR" true &
+			start_inotifywait "$SOUND_DIR" true >/dev/null 2>&1 &
 			POSITION=0
 			_title=
 			write_current_queue
