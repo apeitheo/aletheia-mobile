@@ -105,6 +105,7 @@ done
 
 cleanup() {
 	pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
+	pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
 	pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
@@ -247,6 +248,7 @@ else
 fi
 mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER --gapless-audio=yes "$flags" --hr-seek=yes --input-terminal=yes --cache-pause-initial=yes --video=no --idle --volume=$MAX_VOLUME --input-ipc-server="$MPV_PIPE" --af=equalizer=f=32:g=${_BASS},equalizer=f=64:g=${_BASS},equalizer=f=125:g=${_BASS},equalizer=f=250:g=${_MID},equalizer=f=500:g=${_MID},equalizer=f=1000:g=${_MID},equalizer=f=2000:g=${_MID},equalizer=f=4000:g=${_TREB},equalizer=f=8000:g=${_TREB},equalizer=f=16000:g=${_TREB} </dev/null 2>/dev/null &
 MPV_PID="$!"
+echo -e "Starting mpv server... ${GREEN}ok${NOCOLOR}"
 
 touch -m "$ALETHEIA/start$$"
 
@@ -375,15 +377,25 @@ exec 4<> "$WEB_PIPE"
 mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 TOTAL_QUEUE="${#QUEUE[@]}"
 
-echo -n "" > "$ALETHEIA/incoming"
-echo -n "" > "$ALETHEIA/renamed"
-(inotifywait -mr -e create -e moved_to --format '%w%f' "$MUSIC_DIR" | while read -r new_file
-do
-	basename="$(basename "$new_file")"
-	if [ "${basename:0:1}" != "." ]; then
-		echo "$new_file" >>"$ALETHEIA/incoming"
+start_inotifywait() {
+	local directory="$1"
+	local already_running="$2"
+	if [ "$already_running" == true ]; then
+		pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
+		pkill -f "^inotifywait -mr -e create -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
 	fi
-done) >/dev/null 2>&1 &
+	echo -n "" > "$ALETHEIA/incoming"
+	echo -n "" > "$ALETHEIA/renamed"
+	inotifywait -mr -e create -e moved_to --format '%w%f' "$directory" | while read -r new_file
+	do
+		basename="$(basename "$new_file")"
+		if [ "${basename:0:1}" != "." ]; then
+			echo "$new_file" >>"$ALETHEIA/incoming"
+		fi
+	done
+}
+
+start_inotifywait "$MUSIC_DIR" false >/dev/null 2>&1 &
 
 echo -e "Starting inotifywait... ${GREEN}ok${NOCOLOR}"
 
@@ -542,6 +554,7 @@ launch_mpv() {
 }
 
 node "$ALETHEIA_DATA_DIR/aletheia-webserver.js" &
+echo -e "Starting nodejs web server... ${GREEN}ok${NOCOLOR}"
 
 echo
 
@@ -944,6 +957,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		unset QUEUE
 		mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 		TOTAL_QUEUE="${#QUEUE[@]}"
+		start_inotifywait "$MUSIC_DIR" true &
 		POSITION=0
 		_title=
 		write_current_queue
@@ -993,6 +1007,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			unset QUEUE
 			mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
 			TOTAL_QUEUE="${#QUEUE[@]}"
+			start_inotifywait "$SOUND_DIR" true &
 			POSITION=0
 			_title=
 			write_current_queue
