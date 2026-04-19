@@ -28,7 +28,7 @@ fi
 
 NAME="aletheia-mobile"
 VERSION=3
-REVISION=4
+REVISION=5
 SRCDIR=${SRCDIR:-"$(pwd)"}
 TMPDIR="/tmp/rpm-package-$NAME/"
 

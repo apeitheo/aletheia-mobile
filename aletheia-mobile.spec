@@ -45,6 +45,8 @@ chmod 644 %{buildroot}/%{_datadir}/aletheia-mobile/language.*
 %doc %attr(0644, root, root) %{_docdir}/aletheia-mobile/LICENSE
 
 %changelog
+* Sat Apr 18 2026 Brad Hermanson 1.4
+- Removed inotify-tools dependency.
 * Thu Apr 16 2026 Brad Hermanson 1.3
 - Moved webserver.js to aletheia-webserver.js
 * Tue Apr 14 2026 Brad Hermanson 1.2
