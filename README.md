@@ -10,7 +10,6 @@
 * **mpv**
 * **nodejs**
 * **bash**
-* **inotify-tools**
 * **calc**
 * **bc**
 * **jq**
@@ -88,14 +87,13 @@ Aletheia-Mobile features a robust set of Vim-inspired keybindings for seamless c
 * **ffmpeg**
 * **mpv**
 * **nodejs**
-* **inotify-tools**
 * **socat**
 * **jq**
 
 ```bash
 pkg update
 pkg upgrade
-pkg install bc calc espeak exiftool ffmpeg mpv nodejs inotify-tools socat jq
+pkg install bc calc espeak exiftool ffmpeg mpv nodejs socat jq
 ```
 
 ## Slackware

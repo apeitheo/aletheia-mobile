@@ -74,7 +74,6 @@ check_dep exiftool
 check_dep ffmpeg
 check_dep mpv
 check_dep node
-check_dep inotifywait
 check_dep jq
 check_dep socat
 check_dep gtts-cli true

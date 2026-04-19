@@ -11,7 +11,6 @@ Requires: ffmpeg
 Requires: mpv
 Requires: perl-Image-ExifTool
 Requires: pulseaudio-utils
-Requires: inotify-tools
 Requires: nodejs
 Requires: socat
 Requires: jq

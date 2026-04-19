@@ -31,6 +31,7 @@ AUDIO_FORMATS="mp3,flac"
 regex=".*\.\(${AUDIO_FORMATS//,/\\|}\)$"
 SPEECH_ENGINE="espeak-ng"
 READ_ONLY=true
+SOUNDS=false
 
 GREEN="\033[1;32m"
 NOCOLOR="\033[0m"
@@ -64,7 +65,6 @@ check_dep exiftool
 check_dep ffmpeg
 check_dep mpv
 check_dep node
-check_dep inotifywait
 check_dep socat
 check_dep jq
 check_dep gtts-cli true
@@ -104,12 +104,10 @@ for i in $list; do
 done
 
 cleanup() {
-	pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
-	pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
 	pkill -f "^node .*aletheia-webserver.js" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL_SERVER" 2>/dev/null
 	pkill -f "^mpv --title=ALETHEIA_MOBILE_INTERNAL -$" 2>/dev/null
-	rm -f "$ALETHEIA/start$$" "$ALETHEIA/incoming" "$ALETHEIA/renamed" 2>/dev/null
+	rm -f "$ALETHEIA/start$$" 2>/dev/null
 	rm -f "$INT_PIPE" "$QUEUE_PIPE" "$MPV_PIPE" "$TITLE_PIPE" "$WEB_PIPE" "$PAUSE_PIPE" 2>/dev/null
 }
 
@@ -338,19 +336,14 @@ speak() {
 }
 
 add_downloaded() {
-	sort -u -o "$ALETHEIA/incoming" "$ALETHEIA/incoming"
-	comm -23 "$ALETHEIA/incoming" "$ALETHEIA/renamed" >"$ALETHEIA/incoming.new"
-	mv "$ALETHEIA/incoming.new" "$ALETHEIA/incoming"
-	list="$(grep -E "\.(${AUDIO_FORMATS//,/|})$" "$ALETHEIA/incoming" )"
-	final_list=""
-	while IFS= read -r file; do
-		if [[ -e "$file" ]]; then
-			final_list+="$file"$'\n'
-		fi
-	done <<< "$list"
-	list="${final_list%$'\n'}"
-	echo -n "" >"$ALETHEIA/incoming"
-	echo -n "" >"$ALETHEIA/renamed"
+	unset tmpQUEUE
+	if [ "$SOUNDS" == true ]; then
+		mapfile -t tmpQUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*")
+	else
+		mapfile -t tmpQUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*")
+	fi
+	list="$(comm -23 <(printf '%s\n' "${tmpQUEUE[@]}" | sort) <(printf '%s\n' "${QUEUE[@]}" | sort) | grep -E "\.(${AUDIO_FORMATS//,/|})$")"
+	unset tmpQUEUE
 	unset DOWNLOAD_POSITION
 	if [ "${list:0:1}" != "" ]; then
 		mapfile -O "$TOTAL_QUEUE" -t QUEUE <<<"$list"
@@ -383,28 +376,6 @@ exec 4<> "$WEB_PIPE"
 
 mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 TOTAL_QUEUE="${#QUEUE[@]}"
-
-start_inotifywait() {
-	local directory="$1"
-	local already_running="$2"
-	if [ "$already_running" == true ]; then
-		pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $SOUND_DIR" 2>/dev/null
-		pkill -f "^inotifywait -mr -e create -e moved_from -e moved_to --format %w%f $MUSIC_DIR" 2>/dev/null
-	fi
-	echo -n "" > "$ALETHEIA/incoming"
-	echo -n "" > "$ALETHEIA/renamed"
-	inotifywait -mr -e create -e moved_from -e moved_to --format '%w%f' "$directory" | while read -r new_file
-	do
-		basename="$(basename "$new_file")"
-		if [ "${basename:0:1}" != "." ]; then
-			echo "$new_file" >>"$ALETHEIA/incoming"
-		fi
-	done
-}
-
-start_inotifywait "$MUSIC_DIR" false >/dev/null 2>&1 &
-
-echo -e "Starting inotifywait... ${GREEN}ok${NOCOLOR}"
 
 if [ "$TOTAL_QUEUE" == "0" ]; then
 	echo "Nothing found in $MUSIC_DIR"
@@ -956,6 +927,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		echo -e "$(word_lookup "UNLOCKED")" > "$INT_PIPE"
 		;;
 	'P')
+		SOUNDS=false
 		if [ "$STAY_STOPPED" == false ]; then
 			fade_volume
 		fi
@@ -964,7 +936,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		unset QUEUE
 		mapfile -t QUEUE < <(find "$MUSIC_DIR" -type f -iregex "$regex" -and -not -name ".*" -not -path "*${SOUND_DIR%/}*" | shuf)
 		TOTAL_QUEUE="${#QUEUE[@]}"
-		start_inotifywait "$MUSIC_DIR" true >/dev/null 2>&1 &
 		POSITION=0
 		_title=
 		write_current_queue
@@ -995,6 +966,7 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 		fi
 		;;
 	'S')
+		SOUNDS=true
 		PASS=false
 		IFS=","
 		for i in $AUDIO_FORMATS; do
@@ -1014,7 +986,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			unset QUEUE
 			mapfile -t QUEUE < <(find "$SOUND_DIR" -type f -iregex "$regex" -and -not -name ".*" | shuf)
 			TOTAL_QUEUE="${#QUEUE[@]}"
-			start_inotifywait "$SOUND_DIR" true >/dev/null 2>&1 &
 			POSITION=0
 			_title=
 			write_current_queue
@@ -1522,8 +1493,6 @@ while [ "$POSITION" -lt "$TOTAL_QUEUE" ]; do
 			if [ -e "${file2}.loops" ]; then
 				mv "${file2}.loops" "$ALETHEIA/loops/${artist# } - ${title# }.$ext.loops"
 			fi
-			echo -n "${QUEUE[POSITION]%/*}/${artist# } - ${title# }.$ext" >>"$ALETHEIA/renamed"
-			sort -o "$ALETHEIA/renamed" "$ALETHEIA/renamed"
 			QUEUE[POSITION]="${QUEUE[POSITION]%/*}/${artist# } - ${title# }.$ext"
 			write_current_queue
 		else
