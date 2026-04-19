@@ -248,6 +248,10 @@
 		<link rel="stylesheet" href="theme-light.css" id="theme-style" media="(prefers-color-scheme: light)"/>
 
 		<script>
+			window.addEventListener('focus', () => {
+				music_page();
+			});
+
 			const savedTheme = localStorage.getItem('theme');
 
 			if (savedTheme === 'light') {
@@ -388,6 +392,7 @@
 					console.error("Search failed:", text);
 					return;
 				}
+				music_page();
 			});
 
 			function fetchData() {
